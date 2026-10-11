@@ -375,6 +375,15 @@ These look like bugs but are in the original, so they were reproduced:
 - The "Book a call" sheen is **black on a black pill**, so it is invisible.
   Set `--shine` (e.g. `rgba(255,255,255,.28)`) on `.btn` to switch it on.
 
+## Analytics
+
+Vercel Web Analytics, in its plain-HTML form: a two-line snippet in the
+`<head>` of both pages that loads `/_vercel/insights/script.js`. No npm package:
+`@vercel/analytics` (and its `/next` import) needs a bundler, and this site has
+no build step. Vercel serves the script itself, so it only runs on the
+deployed site — on `localhost` the request 404s, harmlessly. Page views show up
+once **Analytics** is enabled for the project in the Vercel dashboard.
+
 ## Notes
 
 - The clock is real Amsterdam time via `Intl.DateTimeFormat` with

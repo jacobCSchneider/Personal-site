@@ -38,6 +38,13 @@
   document.documentElement.classList.add('pre-anim');
   setTimeout(function () { document.documentElement.classList.remove('pre-anim'); }, 2000);
 </script>
+<!-- Vercel Web Analytics (static-site version of @vercel/analytics).
+     The script is served by Vercel itself, so it only loads on the deployed
+     site; locally it 404s, which is harmless. -->
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
 </head>
 
 <body>
