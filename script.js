@@ -456,17 +456,14 @@ var gridPaused = false;
   if (!window.gsap || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
   var img = photo.querySelector('img');
-  var cap = photo.querySelector('.photo__caption');
 
   gsap.set(img, { opacity: 0, filter: 'blur(8px)' });
-  gsap.set(cap, { opacity: 0 });
 
   // a plain fade with a little blur, once the photo comes into view
   function reveal() {
     var tl = gsap.timeline()
       .fromTo(img, { opacity: 0, filter: 'blur(8px)' },
         { opacity: 1, filter: 'blur(0px)', duration: 1.1, ease: 'power2.out' }, 0)
-      .fromTo(cap, { opacity: 0 }, { opacity: 1, duration: .6, ease: 'power2.out' }, .5)
       .add(function () { gsap.set(img, { clearProps: 'filter' }); });   // back to crisp
 
     // if rAF is throttled the tween never ticks — never leave the photo invisible

@@ -795,6 +795,7 @@ html.has-modal, html.has-modal body { overflow: hidden }
   width: 100%;
   max-width: var(--col);
   margin-inline: auto;
+  margin-top: -50px;            /* sit 40px under the intro, not the page's 90px section gap */
 }
 
 .photo { margin: 0 }
@@ -814,12 +815,6 @@ html.has-modal, html.has-modal body { overflow: hidden }
   height: auto;
 }
 
-.photo__caption {
-  padding-top: 12px;
-  font-size: 14px;
-  line-height: 1.3em;
-  color: var(--ink-40);
-}
 
 /* ── horizontal timeline ──
    A ruler you scrub: the strip moves under a fixed needle at the centre, and
