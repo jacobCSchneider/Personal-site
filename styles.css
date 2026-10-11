@@ -1,0 +1,1089 @@
+/* ============================================================
+   jacobschneider.design — hand-coded rebuild of the Framer site
+   Breakpoints mirror the original: desktop ≥1200, tablet 810–1199, mobile ≤809
+   ============================================================ */
+
+/* ── fonts ───────────────────────────────────────────────── */
+@font-face { font-family: "Season Mix Medium Italic"; src: url("assets/fonts/zmjM2ePSvHOZ43x5hgbOQjVZPRM.woff2") format("woff2"); font-style: italic; font-weight: 580; font-display: swap }
+@font-face { font-family: "Inter"; src: url("assets/fonts/GrgcKwrN6d3Uz8EwcLHZxwEfC4.woff2") format("woff2"); font-display: swap; font-style: normal; font-weight: 400; unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2070, U+2074-207E, U+2080-208E, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD }
+@font-face { font-family: "Inter"; src: url("assets/fonts/JeYwfuaPfZHQhEG8U5gtPDZ7WQ.woff2") format("woff2"); font-display: swap; font-style: normal; font-weight: 400; unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF }
+@font-face { font-family: "Inter"; src: url("assets/fonts/b6Y37FthZeALduNqHicBT6FutY.woff2") format("woff2"); font-display: swap; font-style: normal; font-weight: 400; unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB }
+@font-face { font-family: "Inter"; src: url("assets/fonts/OYrD2tBIBPvoJXiIHnLoOXnY9M.woff2") format("woff2"); font-display: swap; font-style: normal; font-weight: 400; unicode-range: U+0370-03FF }
+@font-face { font-family: "Inter"; src: url("assets/fonts/Y9k9QrlZAqio88Klkmbd8VoMQc.woff2") format("woff2"); font-display: swap; font-style: normal; font-weight: 400; unicode-range: U+1F00-1FFF }
+@font-face { font-family: "Inter"; src: url("assets/fonts/EOr0mi4hNtlgWNn9if640EZzXCo.woff2") format("woff2"); font-display: swap; font-style: normal; font-weight: 400; unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116 }
+@font-face { font-family: "Inter"; src: url("assets/fonts/5vvr9Vy74if2I6bQbJvbw7SY1pQ.woff2") format("woff2"); font-display: swap; font-style: normal; font-weight: 400; unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F }
+/* metric-compatible fallback, so the layout does not shift while Inter loads */
+@font-face { font-family: "Inter Placeholder"; src: local("Arial"); ascent-override: 89.79%; descent-override: 22.36%; line-gap-override: 0%; size-adjust: 107.89% }
+
+/* ── tokens ──────────────────────────────────────────────── */
+:root {
+  --bg:        #fdfdfb;
+  --ink:       #000;
+  --ink-70:    rgba(0, 0, 0, .7);
+  --ink-40:    rgba(0, 0, 0, .4);
+  --line:      #e3e3e1;
+  --card-bg:   #f3f3f1;
+  --clock:     #999;
+  --accent:    #ff8c00;
+  --chip-bg:   #e8e8e8;
+
+  --veil:      rgba(253, 253, 251, .72);   /* modal wash + card affordance */
+  --on-ink:    #fff;                       /* text on a solid --ink fill */
+
+  --col:       600px;   /* centred reading column */
+  --ease:      cubic-bezier(.44, 0, .56, 1);
+}
+
+/* ── themes ──────────────────────────────────────────────
+   Set on <html> before first paint by the inline script in <head>; the button
+   left of AMS cycles through them and remembers the choice. Every theme only
+   restates these tokens — nothing else in the stylesheet is theme-aware.
+   --chip-bg stays light throughout because the Red Antler logo is baked dark
+   on light, and the Mollie plate stays dark because its glyph is white. */
+
+/* neutral near-black */
+:root[data-theme="dark"] {
+  --bg:        #0e0e0d;
+  --ink:       #f4f4f1;
+  --ink-70:    rgba(244, 244, 241, .7);
+  --ink-40:    rgba(244, 244, 241, .4);
+  --line:      #2d2d2a;
+  --card-bg:   #1a1a18;
+  --clock:     #6e6e69;
+  --veil:      rgba(14, 14, 13, .72);
+  --on-ink:    #0e0e0d;
+
+  color-scheme: dark;
+}
+
+/* warm cream, brown-black ink */
+:root[data-theme="paper"] {
+  --bg:        #f6f1e7;
+  --ink:       #2b2420;
+  --ink-70:    rgba(43, 36, 32, .72);
+  --ink-40:    rgba(43, 36, 32, .42);
+  --line:      #e2d9c9;
+  --card-bg:   #efe8da;
+  --clock:     #a39889;
+  --veil:      rgba(246, 241, 231, .74);
+  --on-ink:    #f6f1e7;
+  --chip-bg:   #e6ded0;
+}
+
+
+/* Components carry their own transitions (links, dots, arrows, buttons), so a
+   theme change would fade some things and snap others. This kills every
+   transition for the duration of the swap, so the whole page flips at once.
+   script.js adds it, forces a style flush, then removes it. */
+:root.theming,
+:root.theming *,
+:root.theming *::before,
+:root.theming *::after {
+  transition: none !important;
+  animation-duration: 0s !important;
+}
+
+/* ── base ────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box }
+
+html { -webkit-text-size-adjust: 100% }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, "Inter Placeholder", sans-serif;
+  font-size: 16px;
+  line-height: 1.2;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+p { margin: 0 }
+
+img, video { display: block }
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 90px;
+  padding-top: 120px;
+}
+
+/* The home page ends on the Works CTA, which carries its own 80px. The about
+   page ends on the readout, so it needs the room adding. */
+.page--about { padding-bottom: 180px }
+
+/* every section except Works is a centred 600px column */
+.statusbar, .about, .testimonials, .services {
+  width: 100%;
+  max-width: var(--col);
+  margin-inline: auto;
+}
+
+.section-label {
+  font-size: 15px;
+  line-height: 1.4em;
+  color: var(--ink-40);
+}
+
+/* The About label doubles as the link to the about page. inline-flex, not
+   inline, so the hero intro can still transform it. */
+.section-label--link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  text-decoration: none;
+  transition: color .2s var(--ease);
+}
+.section-label--link:hover { color: var(--ink) }
+.section-label--link svg {
+  width: 11px; height: 11px;
+  fill: none; stroke: currentColor;
+  stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round;
+  transition: transform .2s var(--ease);
+}
+.section-label--link:hover svg { transform: translateX(2px) }
+
+/* shared link treatment — the grey rule under links is an underline,
+   not a separate element as in the Framer export */
+.lnk {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  text-decoration-skip-ink: none;
+  transition: color .2s var(--ease);
+}
+.lnk:hover { color: var(--ink-40) }
+.lnk--16 { font-size: 16px; line-height: 1.2em; text-underline-offset: 4px }
+
+/* ═══════════════════════ status bar ═══════════════════════ */
+.statusbar__row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.statusbar__side { flex: 1 0 0; display: flex; align-items: center; gap: 4px; min-width: 0 }
+.statusbar__side--start { justify-content: flex-start }
+.statusbar__side--end   { justify-content: flex-end }
+
+.status { display: flex; align-items: center; gap: 6px }
+
+.status__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50px;
+  background: var(--ink);
+  flex: none;
+}
+
+.status__label,
+.statusbar__city {
+  font-size: 15px;
+  line-height: 1.4em;
+  color: var(--ink-70);
+  white-space: nowrap;
+}
+
+/* Colour-theme swatches, sitting just left of AMS. Each one is simply that
+   theme's page colour. Hard-coded per theme on purpose — a swatch must show
+   its own theme, not the active one. The hairline keeps the pale ones visible
+   against a pale page. */
+.themes {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 8px;
+}
+
+.sw {
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  background: var(--sw-bg);
+  box-shadow: inset 0 0 0 1px rgba(128, 128, 128, .35);
+  transition: transform .18s var(--ease);
+}
+.sw:hover { transform: scale(1.18) }
+.sw:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px }
+
+/* the active one keeps a ring in the current theme's ink */
+.sw[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 1px rgba(128, 128, 128, .35),
+              0 0 0 1.5px var(--bg),
+              0 0 0 3px var(--ink);
+}
+
+.sw--light    { --sw-bg: #fdfdfb }
+.sw--dark     { --sw-bg: #0e0e0d }
+.sw--paper    { --sw-bg: #f6f1e7 }
+
+@media (prefers-reduced-motion: reduce) {
+  .sw { transition: none }
+  .sw:hover { transform: none }
+}
+
+.statusbar__divider {
+  width: 2px;
+  height: 12px;
+  border-radius: 36px;
+  background: var(--line);
+  flex: none;
+}
+
+.clock {
+  color: var(--clock);
+  font-size: 16px;
+  line-height: 1em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ═══════════════════════ about ═══════════════════════════ */
+.about {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.about__text {
+  /* pre-wrap preserves the padded space runs the inline marks sit in —
+     this is how the original reserves room for them */
+  white-space: pre-wrap;
+  font-size: 18px;
+  line-height: 1.4em;
+  color: var(--ink);
+  width: 100%;
+}
+
+.dim { color: var(--ink-70) }
+
+.signature {
+  font-family: "Season Mix Medium Italic", sans-serif;
+  font-style: italic;
+  font-weight: 580;
+  font-size: 19px;
+  color: var(--ink);
+}
+
+/* The Framer logo is the one mark that must stay at the end of its line when
+   the text wraps after it, so it is drawn from a zero-advance anchor that sits
+   in the padded space run (the same trick the Framer export uses). --y places
+   the icon centre relative to the baseline. */
+.ico {
+  position: relative;
+  display: inline-block;
+  width: 0;
+  height: 0;
+  vertical-align: baseline;
+}
+.ico > * {
+  position: absolute;
+  left: var(--x, 3px);
+  top: var(--y, -5px);
+  transform: translateY(-50%);
+}
+.ico--framer > * { --x: 1.1px; --y: -6.1px; width: 24px; height: 24px }
+
+/* The company marks are real inline boxes instead, so a line break can never
+   strand one away from the name it belongs to. The margins are tuned so each
+   mark takes exactly the space the original reserved for it. */
+.mark {
+  display: inline-block;
+  flex: none;
+}
+.mark--mollie {
+  width: 16px;
+  height: 16px;
+  margin: 0 5px 0 -.76px;
+  border-radius: 5.28px;
+  background: #000;          /* the glyph is white, so the plate stays dark */
+  vertical-align: -2.7px;
+  text-align: center;
+}
+/* The source PNG is 240x157 of actual glyph (it used to carry 76px of empty
+   space on top, which pushed the m low). Rendered at its real aspect and
+   centred: 6.54 + 2 * 4.73 = 16, so the chip's baseline is unchanged. */
+.mark--mollie img { width: 10px; height: 6.54px; margin: 4.73px auto }
+
+.mark--antler {
+  width: 17px;
+  height: 17px;
+  margin: 0 4px 0 -.76px;
+  border-radius: 6px;
+  background: var(--chip-bg);
+  vertical-align: -3.7px;
+}
+
+/* Pure black would vanish into the dark page; this keeps the badge legible
+   while staying effectively black. */
+:root[data-theme="dark"] .mark--mollie { background: #1c1c1a }
+
+.mark--dalen {
+  width: 17px;
+  height: 17px;
+  margin: 0 6px 0 -2.76px;
+  border-radius: 50%;
+  background: var(--accent);
+  vertical-align: -2.7px;
+}
+
+/* ── actions ── */
+.about__actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-top: 24px;
+}
+
+.magnet { display: inline-flex }
+
+.btn {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 186px;
+  background: var(--ink);
+  color: var(--on-ink);
+  text-decoration: none;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.btn__label {
+  position: relative;
+  z-index: 2;
+  font-size: 16px;
+  line-height: 1.2em;
+  white-space: nowrap;
+}
+
+/* Sheen that sweeps across the pill on hover — exactly as the Framer original
+   ships it: in the button's own colour, so it is invisible there and here.
+   Kept 1:1 on purpose. Set --shine (e.g. rgba(255,255,255,.28)) to see it. */
+.btn__shine {
+  position: absolute;
+  z-index: 1;
+  top: calc(51.4286% - 14.5px);
+  left: -44px;
+  width: 45px;
+  height: 29px;
+  background: var(--shine, var(--ink));
+  filter: blur(6px);
+  transform: rotate(20deg);
+  transition: left .55s var(--ease);
+}
+.btn:hover .btn__shine { left: 104px }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn__shine { transition: none }
+}
+
+/* ═══════════════════════ testimonials ═════════════════════ */
+/* 613px, not 600px: the original testimonial block is 13px wider than the
+   other columns and therefore sits ~6px further left. Kept for fidelity —
+   set this to var(--col) to line it up with About. */
+.testimonials {
+  max-width: 613px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.testimonials__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: var(--col);
+}
+
+.dots { display: flex; gap: 2px }
+
+.dot {
+  width: 2px;
+  height: 12px;
+  border-radius: 36px;
+  background: var(--line);
+  transition: background-color .2s var(--ease);
+}
+.dot.is-active { background: var(--ink) }
+
+/* only the active slide is in flow — the block grows and shrinks with it,
+   exactly like the original */
+.slides { position: relative; width: 100% }
+
+.slide {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s var(--ease);
+}
+.slide.is-active {
+  position: relative;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Animated mode (GSAP present, motion allowed): every slide goes absolute and
+   the wrapper's own height is tweened, so the arrows below glide between the
+   one-line and four-line quotes instead of snapping. */
+.slides.is-animated .slide {
+  position: absolute;
+  opacity: 1;
+  visibility: hidden;
+  transition: none;
+}
+.slides.is-animated .slide.is-active { visibility: visible }
+
+.slide__avatar {
+  position: absolute;
+  left: 0;
+  top: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  object-fit: cover;
+  z-index: 1;
+}
+
+.slide__text {
+  /* the four leading spaces are the indent the avatar sits in */
+  white-space: pre-wrap;
+  font-size: 18px;
+  line-height: 1.4em;
+  color: var(--ink-70);
+}
+
+.slide__link {
+  color: var(--ink);
+  text-decoration: none;
+  transition: color .2s var(--ease);
+}
+.slide__link:hover { color: var(--ink-40) }
+
+.slide__link .u {
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  text-decoration-skip-ink: none;
+}
+
+.arrows {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  width: max-content;
+  height: 45px;
+}
+
+.arrow {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  opacity: .7;
+  transition: opacity .2s var(--ease);
+}
+.arrow:hover { opacity: 1 }
+/* the original never dims the arrows at the ends, so neither do we */
+.arrow[aria-disabled="true"] { cursor: default }
+
+.arrow svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.arrow--next svg { transform: rotate(180deg) }
+
+/* ═══════════════════════ works ════════════════════════════ */
+.works {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.works__head {
+  width: 100%;
+  max-width: var(--col);
+  margin-inline: auto;
+  padding-bottom: 24px;
+}
+
+/* The original uses 12px top padding on every row and 12px bottom on the
+   first one only, so the gap between row 1→2 is 24px and row 2→3 is 12px.
+   Reproduced as-is; give every row `padding: 12px 32px` to even it out. */
+.work-row {
+  display: flex;
+  gap: 12px;
+  padding: 12px 32px 0;
+}
+/* only the first card row carries bottom padding (see note above) */
+.works__head + .work-row { padding-bottom: 12px }
+
+.card {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 400px;
+  border-radius: 12px;
+  background: var(--card-bg);
+  overflow: hidden;
+}
+
+/* per-card placement comes from --vx/--vy/--vw/--vh set in the markup */
+.card__media {
+  position: absolute;
+  left: var(--vx);
+  top: var(--vy);
+  width: var(--vw);
+  height: var(--vh);
+  max-width: calc(100% - 2 * var(--vx));
+}
+.card__media video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 50%;
+}
+
+.card__label {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  font-size: 14px;
+  line-height: 1.3em;
+  color: var(--ink-40);
+  white-space: nowrap;
+}
+
+/* ═══════════════════════ services ═══════════════════════ */
+.services { display: flex; flex-direction: column; gap: 16px }
+
+.services__list { position: relative; margin: 0; padding: 0; list-style: none }
+
+/* The hairlines are pseudo-elements rather than borders so they can be drawn:
+   script.js runs --draw from 0 to 1 when the section comes into view, and
+   each line grows out from the left. */
+.service {
+  --draw: 1;
+  position: relative;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) minmax(0, 1.3fr);
+  align-items: baseline;
+  gap: 16px;
+  padding: 18px 0;
+}
+.service::after,
+.services__list::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--line);
+  transform: scaleX(var(--draw));
+  transform-origin: 0 50%;
+}
+.service::after { top: 0 }
+.services__list::after { bottom: 0; transform: scaleX(var(--draw-end, 1)) }
+
+.service__num {
+  font-size: 14px;
+  line-height: 1.3em;
+  color: var(--ink-40);
+  font-variant-numeric: tabular-nums;
+}
+
+.service__name {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.4em;
+  font-weight: 400;
+  color: var(--ink);
+}
+
+.service__desc {
+  font-size: 15px;
+  line-height: 1.45em;
+  color: var(--ink-70);
+}
+
+/* the closing call to action, after Services */
+.page-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 80px 80px;
+}
+
+/* ═══════════════════════ hero intro ══════════════════════ */
+/* Held hidden until the intro timeline sets its own start state, so nothing
+   flashes in unanimated. script.js removes .pre-anim; the inline failsafe in
+   <head> removes it too if the scripts never arrive. */
+.pre-anim .statusbar__row,
+.pre-anim .about > .section-label,
+.pre-anim .about__text,
+.pre-anim .about__actions,
+.pre-anim .testimonials,
+.pre-anim .works,
+.pre-anim .services,
+.pre-anim .page-cta { opacity: 0 }
+
+/* Word wrappers stay `display: inline` on purpose — making them inline-block
+   would let them transform, but it also changes where the paragraph breaks. */
+.w { display: inline }
+
+/* ═══════════════════════ card → modal ═════════════════════ */
+/* The whole card is one focusable control; the expand glyph is decoration. */
+.card__open {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: inherit;
+}
+.card__open:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px }
+
+.card__expand {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--veil);
+  color: var(--ink-40);
+  opacity: 0;
+  transform: scale(.9);
+  transition: opacity .2s var(--ease), transform .2s var(--ease), color .2s var(--ease);
+}
+.card__expand svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round }
+
+.card:hover .card__expand,
+.card__open:focus-visible .card__expand { opacity: 1; transform: none }
+.card__open:hover .card__expand { color: var(--ink) }
+
+/* touch devices have no hover, so always show the affordance */
+@media (hover: none) {
+  .card__expand { opacity: 1; transform: none }
+}
+
+/* ── the dialog ── */
+.modal {
+  width: min(1200px, 100% - 48px);
+  max-height: min(900px, 100vh - 64px);
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--ink);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;            /* no visible scrollbar — it still scrolls */
+  -ms-overflow-style: none;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .08);
+
+  opacity: 0;
+  transform: scale(.96);
+  transition: opacity .22s var(--ease), transform .3s var(--ease);
+}
+.modal.is-open { opacity: 1; transform: none }
+.modal::-webkit-scrollbar { width: 0; height: 0; display: none }
+
+/* a light wash rather than a dark scrim, to stay in the palette */
+.modal::backdrop {
+  background: rgba(0, 0, 0, 0);
+  backdrop-filter: blur(0px);
+  transition: background-color .25s var(--ease), backdrop-filter .25s var(--ease);
+}
+.modal.is-open::backdrop {
+  background: var(--veil);
+  backdrop-filter: blur(10px);
+}
+
+.modal__close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: var(--card-bg);
+  color: var(--ink-40);
+  cursor: pointer;
+  transition: color .2s var(--ease), background-color .2s var(--ease);
+}
+.modal__close:hover { color: var(--ink); background: var(--line) }
+
+/* brand focus ring, rather than the UA default, on everything in the dialog */
+.modal :focus-visible,
+.modal__close:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+.modal__close svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round }
+
+/* ── contents ── */
+.detail { padding: 48px }
+
+.detail__head { padding-bottom: 40px }
+
+.detail__meta {
+  font-size: 15px;
+  line-height: 1.4em;
+  color: var(--ink-40);
+}
+
+.detail__title {
+  margin: 8px 0 0;
+  font-size: 28px;
+  line-height: 1.25em;
+  font-weight: 400;
+  letter-spacing: -.01em;
+}
+
+.detail__lead {
+  margin-top: 16px;
+  max-width: 62ch;
+  font-size: 18px;
+  line-height: 1.4em;
+  color: var(--ink-70);
+}
+
+.detail__media {
+  border-radius: 12px;
+  background: var(--card-bg);
+  overflow: hidden;
+}
+.detail__media video {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* no scrolling behind the dialog */
+html.has-modal, html.has-modal body { overflow: hidden }
+
+@media (prefers-reduced-motion: reduce) {
+  .modal, .modal::backdrop, .card__expand { transition: none }
+}
+
+/* ═══════════════════════ about page ═══════════════════════ */
+/* Back link, mirroring the status line on the home page. */
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  line-height: 1.4em;
+  color: var(--ink-70);
+  text-decoration: none;
+  transition: color .2s var(--ease);
+}
+.back:hover { color: var(--ink) }
+.back svg {
+  width: 13px; height: 13px;
+  fill: none; stroke: currentColor;
+  stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+  transition: transform .2s var(--ease);
+}
+.back:hover svg { transform: translateX(-2px) }
+
+/* ── photo ── */
+.shot-full {
+  width: 100%;
+  max-width: var(--col);
+  margin-inline: auto;
+}
+
+.photo { margin: 0 }
+
+/* The frame is what clips; the <img> inside is what scales, so the reveal
+   is a mask rather than the whole thing growing. */
+.photo__frame {
+  position: relative;
+  background: var(--card-bg);
+  overflow: hidden;
+}
+
+/* The photo fades in with a little blur once it comes into view (script.js). */
+.photo__frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.photo__caption {
+  padding-top: 12px;
+  font-size: 14px;
+  line-height: 1.3em;
+  color: var(--ink-40);
+}
+
+/* ── horizontal timeline ──
+   A ruler you scrub: the strip moves under a fixed needle at the centre, and
+   whichever milestone is nearest the needle becomes the active one. Text stays
+   in the column; the ruler runs the full width so it reads as a measure. */
+.ruler {
+  width: 100%;
+  padding-top: 70px;        /* on top of the 90px section gap */
+}
+
+.ruler__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  width: 100%;
+  max-width: var(--col);
+  margin-inline: auto;
+  padding-bottom: 40px;
+}
+
+.ruler__stage {
+  position: relative;
+  -webkit-user-select: none;
+          user-select: none;    /* dragging must never start a text selection */
+  height: 128px;
+  overflow: hidden;
+  cursor: grab;
+  /* fade the ruler out at both ends rather than cutting it off */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+}
+.ruler__stage.is-dragging { cursor: grabbing }
+.ruler__stage:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px }
+
+/* the fixed playhead */
+/* The crosshair. Anchored by its foot rather than its head, so it can grow
+   upward: when it lands on a milestone JS raises --needle-h and it reaches up
+   to touch the word. calc() rather than a fixed `bottom` so the stage can be
+   any height. */
+.ruler__needle {
+  position: absolute;
+  bottom: calc(100% - 96px);
+  left: 50%;
+  z-index: 2;
+  width: 2px;
+  height: var(--needle-h, 34px);
+  margin-left: -1px;
+  border-radius: 36px;
+  background: var(--accent);
+  transition: height .35s var(--ease);
+}
+
+.ruler__strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  will-change: transform;
+}
+
+/* ticks: one per week, taller at each month, tallest at each year */
+.ruler__ticks { position: absolute; top: 72px; left: 0 }
+
+.tick {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  height: 8px;
+  background: var(--ink-40);
+  opacity: .45;
+}
+.tick--month { height: 14px; opacity: .7 }
+.tick--year  { height: 22px; opacity: 1; width: 2px; background: var(--ink) }
+
+.ruler__years { position: absolute; top: 100px; left: 0 }
+
+.year {
+  position: absolute;
+  pointer-events: none;
+  transform: translateX(-50%);
+  font-size: 14px;
+  line-height: 1.3em;
+  color: var(--ink-40);
+  white-space: nowrap;
+}
+
+/* milestone labels above the ruler */
+.ruler__marks { margin: 0; padding: 0; list-style: none }
+
+.ms {
+  --stem: 21px;               /* label bottom down to the tick row */
+  position: absolute;
+  top: 18px;
+  transform: translateX(-50%);
+  padding: 6px 10px;          /* symmetric, so the label stays centred on its date */
+  white-space: nowrap;
+  pointer-events: none;       /* text never catches the pointer; the stage does */
+}
+/* every other one sits higher, so neighbours never collide — and its stem
+   has further to travel to reach the ruler */
+.ms:nth-child(even) { top: -6px; --stem: 45px }
+
+/* A short grey stub on the ruler marking where the milestone sits. It stays
+   put — it's the crosshair that extends to the word, not this.
+
+   No margin-left: the tick is a 1px box whose left edge sits exactly on the
+   milestone's x, and `left: 50%` of a translateX(-50%) box lands on the same
+   edge. Nudging it half a pixel is what made it sit off the ruler. */
+.ms::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 1px;
+  height: var(--stem);
+  background: var(--ink-40);
+  transform: scaleY(.16);
+  transform-origin: 50% 100%;
+}
+
+.ms__title {
+  font-size: 16px;
+  line-height: 1.3em;
+  color: var(--ink-40);
+  transition: color .3s var(--ease);
+}
+.ms.is-active .ms__title { color: var(--ink) }
+.ms__body { display: none }
+
+/* readout under the ruler */
+.ruler__readout {
+  width: 100%;
+  max-width: var(--col);
+  margin-inline: auto;
+  padding-top: 40px;
+  text-align: center;
+}
+
+.ruler__date {
+  font-size: 14px;
+  line-height: 1.3em;
+  color: var(--ink-40);
+}
+
+.ruler__text {
+  margin-top: 10px;
+  font-size: 18px;
+  line-height: 1.45em;
+  color: var(--ink-70);
+  min-height: 4.4em;       /* fallback; script.js measures the real tallest body */
+}
+
+.ruler__cta {
+  display: flex;
+  justify-content: center;
+  padding-top: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s var(--ease);
+}
+.ruler__cta.is-on { opacity: 1; pointer-events: auto }
+
+@media (max-width: 809.98px) {
+  .shot-full, .ruler__head, .ruler__readout { padding-inline: 20px }
+  .ruler__head { flex-direction: column; gap: 6px; align-items: flex-start }
+  .ruler__stage { height: 120px }
+  .ms__title { font-size: 15px }
+  .ruler__text { font-size: 17px }
+}
+
+/* ═══════════════════════ tablet ═══════════════════════════ */
+@media (max-width: 1199.98px) {
+  .work-row { padding-left: 32px; padding-right: 32px }
+
+  .detail { padding: 32px }
+  .detail__head { padding-bottom: 32px }
+
+
+  /* below the desktop breakpoint the original stops hanging the reel from the
+     top padding and centres it in the card at its natural aspect instead */
+  .card__media {
+    left: 48px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: calc(100% - 96px);
+    height: auto;
+    aspect-ratio: var(--mar, var(--vw) / var(--vh));
+    max-width: none;
+  }
+}
+
+/* ═══════════════════════ mobile ═══════════════════════════ */
+@media (max-width: 809.98px) {
+  .statusbar, .about, .testimonials, .services { padding-inline: 20px }
+  .testimonials { max-width: var(--col) }
+
+  .work-row {
+    flex-direction: column;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  /* in a column row, `flex: 1 1 0` would collapse the cards to zero height */
+  .card { flex: none; width: 100%; height: 320px }
+
+  /* the card shrinks to 350px, so the gutter drops from 48px to 24px */
+  .card__media {
+    left: 24px;
+    width: calc(100% - 48px);
+  }
+
+  .ico--framer > * { width: 19px; height: 19px; --y: -5px }
+
+  .page-cta { padding: 0 20px 80px }
+
+  .service { grid-template-columns: 28px minmax(0, 1fr); row-gap: 4px }
+  .service__desc { grid-column: 2 }
+
+  .modal { width: calc(100% - 24px); max-height: calc(100vh - 32px) }
+  .modal__close { top: 12px; right: 12px }
+
+  .detail { padding: 24px }
+  .detail__head { padding-bottom: 24px }
+  /* keep the heading clear of the close button */
+  .detail__meta, .detail__title { padding-right: 44px }
+  .detail__title { font-size: 24px }
+}

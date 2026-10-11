@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About • Jacob Schneider</title>
+<meta name="description" content="Jacob Schneider — designer and Framer developer based in The Netherlands. How I work, and how I got here.">
+
+<link rel="icon" href="assets/img/favicon.png">
+<link rel="canonical" href="https://www.jacobschneider.design/about">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="About • Jacob Schneider">
+<meta property="og:description" content="Jacob Schneider — designer and Framer developer based in The Netherlands. How I work, and how I got here.">
+<meta property="og:image" content="assets/img/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="About • Jacob Schneider">
+<meta name="twitter:description" content="Jacob Schneider — designer and Framer developer based in The Netherlands. How I work, and how I got here.">
+<meta name="twitter:image" content="assets/img/og-image.png">
+
+<link rel="preload" as="font" type="font/woff2" crossorigin href="assets/fonts/GrgcKwrN6d3Uz8EwcLHZxwEfC4.woff2">
+<link rel="preload" as="font" type="font/woff2" crossorigin href="assets/fonts/zmjM2ePSvHOZ43x5hgbOQjVZPRM.woff2">
+<link rel="stylesheet" href="styles.css">
+<script>
+  // Resolve the theme before first paint so it can't flash the wrong one.
+  (function () {
+    var ok = ['light', 'dark', 'paper'];
+    var t;
+    try { t = localStorage.getItem('theme'); } catch (e) {}
+    if (ok.indexOf(t) < 0) {
+      t = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    document.documentElement.setAttribute('data-theme', t);
+  })();
+
+  // Hide the intro before first paint so it can't flash unanimated.
+  // The failsafe reveals it anyway if the scripts fail to load.
+  document.documentElement.classList.add('pre-anim');
+  setTimeout(function () { document.documentElement.classList.remove('pre-anim'); }, 2000);
+</script>
+</head>
+
+<body>
+<main class="page page--about">
+
+  <!-- ───────────────────────── status bar ───────────────────────── -->
+  <header class="statusbar">
+    <div class="statusbar__row">
+      <div class="statusbar__side statusbar__side--start">
+        <a class="back" href="index.html">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8H3"/><path d="M7.5 3.5 3 8l4.5 4.5"/></svg>
+          <span>Back</span>
+        </a>
+      </div>
+      <div class="statusbar__side statusbar__side--end">
+        <div class="themes" id="themes" aria-label="Colour theme">
+          <button class="sw sw--light" type="button" data-theme-id="light" aria-label="Light theme"></button>
+          <button class="sw sw--dark" type="button" data-theme-id="dark" aria-label="Dark theme"></button>
+          <button class="sw sw--paper" type="button" data-theme-id="paper" aria-label="Paper theme"></button>
+        </div>
+        <p class="statusbar__city">AMS</p>
+      </div>
+      <span class="statusbar__divider" aria-hidden="true"></span>
+      <p class="clock" id="clock" aria-label="Current time in Amsterdam">--:--:--</p>
+    </div>
+  </header>
+
+  <!-- ───────────────────────── intro ───────────────────────── -->
+  <section class="about" aria-labelledby="about-title">
+    <p class="section-label" id="about-title">About</p>
+
+    <p class="about__text"><span class="dim">I'm </span><span class="signature">Jacob Schneider</span><span class="dim">, a designer and Framer developer in The Netherlands. I build landing pages that are quick to read and quicker to act on — the kind where the layout does the arguing and nothing on the page is there by accident.</span>
+
+<span class="dim">Most of my work starts the same way: figure out the one thing the page has to say, then cut everything that gets in its way. I design and build in the same place, so what you approve is what ships — no handover, no drift between the file and the site.</span></p>
+  </section>
+
+  <!-- ───────────────────────── photo ───────────────────────── -->
+  <section class="shot-full" aria-label="At work">
+    <figure class="photo" id="photo">
+      <div class="photo__frame">
+        <img src="assets/img/about-desk.jpg" width="1920" height="1080"
+             alt="Jacob Schneider shown four times around one table, writing and working on two laptops."
+             decoding="async">
+      </div>
+      <figcaption class="photo__caption">Design, build, review, repeat — usually all at once.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ───────────────────────── timeline ─────────────────────────
+       Milestones are the <li>s below; JS reads data-date and places them on
+       the ruler, so adding one is a single <li>. Dates drive everything —
+       exact days are approximations of the months Jacob gave.
+  ------------------------------------------------------------------ -->
+  <section class="ruler" id="ruler" aria-labelledby="ruler-title">
+    <div class="ruler__head">
+      <p class="section-label" id="ruler-title">Timeline</p>
+    </div>
+
+    <div class="ruler__stage" id="ruler-stage" tabindex="0"
+         role="slider" aria-label="Timeline" aria-valuemin="1" aria-valuemax="9" aria-valuenow="1">
+      <span class="ruler__needle" aria-hidden="true"></span>
+      <div class="ruler__strip" id="ruler-strip">
+        <div class="ruler__ticks" id="ruler-ticks" aria-hidden="true"></div>
+        <div class="ruler__years" id="ruler-years" aria-hidden="true"></div>
+        <ol class="ruler__marks" id="ruler-marks">
+
+          <li class="ms" data-date="2023-12-22">
+            <span class="ms__title">First websites</span>
+            <span class="ms__body">Spent the Christmas holiday teaching myself WordPress and building my first sites. Mostly to find out how far I could push a layout before it broke.</span>
+          </li>
+
+          <li class="ms" data-date="2024-07-01">
+            <span class="ms__title">First paid gig</span>
+            <span class="ms__body">Picked up my first client through Fiverr. Small job, but the first time someone paid for something I'd designed.</span>
+          </li>
+
+          <li class="ms" data-date="2024-11-15">
+            <span class="ms__title">ITGWO</span>
+            <span class="ms__body">First serious project: the site for Into The Great Wide Open, the festival on Vlieland. It had to read as well on a phone in a field as on a desk.</span>
+          </li>
+
+          <li class="ms" data-date="2025-01-25">
+            <span class="ms__title">An offer from Framer</span>
+            <span class="ms__body">Framer offered me a job. I had to turn it down — school came first. Still the clearest sign so far that the work was landing.</span>
+          </li>
+
+          <li class="ms" data-date="2025-04-15">
+            <span class="ms__title">Museum Villa</span>
+            <span class="ms__body">Built Museum Villa together with Studio Somehow — my first proper studio collaboration, and the first time my work sat inside someone else's art direction.</span>
+          </li>
+
+          <li class="ms" data-date="2025-06-20">
+            <span class="ms__title">Mollie</span>
+            <span class="ms__body">Spent the summer at Mollie, introduced by the founder himself. A year earlier I was building sites on my bedroom floor.</span>
+          </li>
+
+          <li class="ms" data-date="2025-09-15">
+            <span class="ms__title">Daniel Dalen</span>
+            <span class="ms__body">Ongoing freelance work for Daniel Dalen through the rest of 2025 and into 2026 — the kind of repeat client that tells you the work holds up.</span>
+          </li>
+
+          <li class="ms" data-date="2026-01-20">
+            <span class="ms__title">Red Antler</span>
+            <span class="ms__body">Worked with Red Antler, the New York studio, on a new project called <a class="lnk" href="#" data-todo="MODA project URL">MODA</a>.</span>
+          </li>
+
+          <li class="ms ms--now" data-date="2026-10-11">
+            <span class="ms__title">Open for work</span>
+            <span class="ms__body">Taking on freelance projects and part-time roles. If you're looking to level up your digital presence, let's talk.</span>
+          </li>
+
+        </ol>
+      </div>
+    </div>
+
+    <div class="ruler__readout" id="ruler-readout">
+      <p class="ruler__date" id="ruler-date"></p>
+      <p class="ruler__text" id="ruler-text"></p>
+      <div class="ruler__cta">
+        <span class="magnet">
+          <a class="btn" href="https://cal.com/jacobschneider/15min?overlayCalendar=true" target="_blank" rel="noopener">
+            <span class="btn__shine" aria-hidden="true"></span>
+            <span class="btn__label">Book a call</span>
+          </a>
+        </span>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script src="assets/js/gsap.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

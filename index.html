@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jacob Schneider • Freelance Designer &amp; Developer</title>
+<meta name="description" content="18 year old webdesigner and Framer developer based in The Netherlands. Worked with Into The Great Wide open - Alpha Dojo - Letters - Museum Villa">
+
+<link rel="icon" href="assets/img/favicon.png">
+<link rel="canonical" href="https://www.jacobschneider.design/">
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.jacobschneider.design/">
+<meta property="og:title" content="Jacob Schneider • Freelance Designer &amp; Developer">
+<meta property="og:description" content="18 year old webdesigner and Framer developer based in The Netherlands. Worked with Into The Great Wide open - Alpha Dojo - Letters - Museum Villa">
+<meta property="og:image" content="assets/img/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Jacob Schneider • Freelance Designer &amp; Developer">
+<meta name="twitter:description" content="18 year old webdesigner and Framer developer based in The Netherlands. Worked with Into The Great Wide open - Alpha Dojo - Letters - Museum Villa">
+<meta name="twitter:image" content="assets/img/og-image.png">
+
+<link rel="preload" as="font" type="font/woff2" crossorigin href="assets/fonts/GrgcKwrN6d3Uz8EwcLHZxwEfC4.woff2">
+<link rel="preload" as="font" type="font/woff2" crossorigin href="assets/fonts/zmjM2ePSvHOZ43x5hgbOQjVZPRM.woff2">
+<link rel="stylesheet" href="styles.css">
+<script>
+  // Resolve the theme before first paint so it can't flash the wrong one.
+  (function () {
+    var ok = ['light', 'dark', 'paper'];
+    var t;
+    try { t = localStorage.getItem('theme'); } catch (e) {}
+    if (ok.indexOf(t) < 0) {
+      t = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    document.documentElement.setAttribute('data-theme', t);
+  })();
+
+  // Hide the hero before first paint so the intro can't flash unanimated.
+  // The failsafe reveals it anyway if the scripts fail to load.
+  document.documentElement.classList.add('pre-anim');
+  setTimeout(function () { document.documentElement.classList.remove('pre-anim'); }, 2000);
+</script>
+</head>
+
+<body>
+<main class="page">
+
+  <!-- ───────────────────────── status bar ───────────────────────── -->
+  <header class="statusbar">
+    <div class="statusbar__row">
+      <div class="statusbar__side statusbar__side--start">
+        <div class="status">
+          <span class="status__dot" aria-hidden="true"></span>
+          <p class="status__label">Open for work</p>
+        </div>
+      </div>
+      <div class="statusbar__side statusbar__side--end">
+        <div class="themes" id="themes" aria-label="Colour theme">
+          <button class="sw sw--light" type="button" data-theme-id="light" aria-label="Light theme"></button>
+          <button class="sw sw--dark" type="button" data-theme-id="dark" aria-label="Dark theme"></button>
+          <button class="sw sw--paper" type="button" data-theme-id="paper" aria-label="Paper theme"></button>
+        </div>
+        <p class="statusbar__city">AMS</p>
+      </div>
+      <span class="statusbar__divider" aria-hidden="true"></span>
+      <p class="clock" id="clock" aria-label="Current time in Amsterdam">--:--:--</p>
+    </div>
+  </header>
+
+  <!-- ───────────────────────── about ───────────────────────── -->
+  <section class="about" aria-labelledby="about-title">
+    <a class="section-label section-label--link" id="about-title" href="about.html">About
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10"/><path d="M8.5 3.5 13 8l-4.5 4.5"/></svg>
+    </a>
+
+    <p class="about__text"><span class="dim">My name is </span><span class="signature">Jacob Schneider</span><span class="dim">, A young and passionate designer and</span><span class="ico ico--framer" aria-hidden="true"><img src="assets/img/framer-logo.png" width="24" height="24" alt=""></span><span class="dim">   </span><a class="lnk" href="https://www.framer.com/@jacobcschneider/" target="_blank" rel="noopener">Framer expert</a><span class="dim">. I previously worked for </span><span class="mark mark--mollie" aria-hidden="true"><img src="assets/img/mollie-mark.png" width="10" height="10" alt=""></span><a class="lnk" href="https://mollie.com" target="_blank" rel="noopener">Mollie</a><span class="dim">, </span><img class="mark mark--antler" src="assets/img/red-antler.webp" width="17" height="17" alt="" aria-hidden="true"><a class="lnk" href="https://www.redantler.com/" target="_blank" rel="noopener">Red antler</a><span class="dim">, </span><span class="mark mark--dalen" aria-hidden="true"></span><a class="lnk" href="https://x.com/Danieldalen/status/1997968939041906960" target="_blank" rel="noopener">Daniel Dalen</a><span class="dim">. Open to freelance projects and part-time opportunities. If you're looking to level up your digital presence, let's talk.</span></p>
+
+    <div class="about__actions">
+      <!-- The wrapper is what the hero intro animates; the magnetic hover moves
+           the <a> inside it, so the two never fight over `transform`. -->
+      <span class="magnet">
+        <a class="btn" href="https://cal.com/jacobschneider/15min?overlayCalendar=true" target="_blank" rel="noopener">
+          <span class="btn__shine" aria-hidden="true"></span>
+          <span class="btn__label">Book a call</span>
+        </a>
+      </span>
+      <span class="mail">
+        <a class="lnk lnk--16" href="mailto:sjakieschneider@gmail.com">Send a mail</a>
+      </span>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── testimonials ───────────────────────── -->
+  <section class="testimonials" aria-labelledby="testimonials-title">
+    <div class="testimonials__head">
+      <p class="section-label" id="testimonials-title">Testimonials</p>
+      <div class="dots" id="dots" aria-hidden="true">
+        <span class="dot is-active"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      </div>
+    </div>
+
+    <div class="slides" id="slides">
+      <div class="slide is-active">
+        <img class="slide__avatar" src="assets/img/avatar-daniel-dalen.png" width="16" height="16" alt="">
+        <p class="slide__text"><a class="slide__link" href="https://x.com/Danieldalen/status/1997968939041906960" target="_blank" rel="noopener">    <span class="u">Daniel Dalen:</span> ".@JacobCSchneider is honestly one of the most talented web designers I've ever worked with.  If you need landing pages, he's your guy."</a></p>
+      </div>
+
+      <div class="slide">
+        <img class="slide__avatar" src="assets/img/avatar-2.png" width="16" height="16" alt="">
+        <p class="slide__text">    Jorn van Dijk: Dope work!</p>
+      </div>
+
+      <div class="slide">
+        <img class="slide__avatar" src="assets/img/avatar-3.png" width="16" height="16" alt="">
+        <p class="slide__text">    Ben Smith: Jacob has an unmatched eye for detail. His ability to turn ideas into reality proves his skill level as a designer. I needed a landing page that went beyond aesthetic, something that truly converts—and he delivered.</p>
+      </div>
+
+      <div class="slide">
+        <img class="slide__avatar" src="assets/img/avatar-4.png" width="16" height="16" alt="">
+        <p class="slide__text"><a class="slide__link" href="https://x.com/JacobCSchneider/status/1974901613182730538" target="_blank" rel="noopener">    Tommy Geoco: "I would hire this guy in a heartbeat"</a></p>
+      </div>
+    </div>
+
+    <div class="arrows">
+      <button class="arrow" id="prev" type="button" aria-label="Previous testimonial">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      </button>
+      <button class="arrow arrow--next" id="next" type="button" aria-label="Next testimonial">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── works ───────────────────────── -->
+  <section class="works" aria-labelledby="works-title">
+    <div class="works__head">
+      <p class="section-label" id="works-title">Works</p>
+    </div>
+
+    <div class="work-row">
+      <article class="card" style="--vx:48px; --vy:48px; --vw:466px; --vh:264px; --mar:1920/1080" data-project="museum-villa">
+        <div class="card__media">
+          <video src="assets/video/museum-villa.mp4" poster="assets/img/poster-museum-villa.png"
+                 autoplay loop muted playsinline></video>
+        </div>
+        <p class="card__label">Museum Villa</p>
+        <button class="card__open" type="button" aria-haspopup="dialog" aria-label="Open case study: Museum Villa"><span class="card__expand"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 2.5h4v4"/><path d="M13.5 2.5l-5 5"/><path d="M6.5 13.5h-4v-4"/><path d="M2.5 13.5l5-5"/></svg></span></button>
+      </article>
+
+      <article class="card" style="--vx:50px; --vy:48px; --vw:463px; --vh:290px; --mar:1724/1080" data-project="mollie-hive">
+        <div class="card__media">
+          <video src="assets/video/mollie-hive.mp4" poster="assets/img/poster-mollie-hive.png"
+                 autoplay loop muted playsinline></video>
+        </div>
+        <p class="card__label">Mollie X Hive</p>
+        <button class="card__open" type="button" aria-haspopup="dialog" aria-label="Open case study: Mollie X Hive"><span class="card__expand"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 2.5h4v4"/><path d="M13.5 2.5l-5 5"/><path d="M6.5 13.5h-4v-4"/><path d="M2.5 13.5l5-5"/></svg></span></button>
+      </article>
+    </div>
+
+    <div class="work-row">
+      <article class="card" style="--vx:48px; --vy:42px; --vw:466px; --vh:316px; --mar:302/211" data-project="ai-at-mollie">
+        <div class="card__media">
+          <video src="assets/video/ai-at-mollie.mp4" autoplay loop muted playsinline></video>
+        </div>
+        <p class="card__label">AI at Mollie</p>
+        <button class="card__open" type="button" aria-haspopup="dialog" aria-label="Open case study: AI at Mollie"><span class="card__expand"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 2.5h4v4"/><path d="M13.5 2.5l-5 5"/><path d="M6.5 13.5h-4v-4"/><path d="M2.5 13.5l5-5"/></svg></span></button>
+      </article>
+
+      <article class="card" style="--vx:48px; --vy:48px; --vw:466px; --vh:288px; --mar:1748/1080" data-project="letters">
+        <div class="card__media">
+          <video src="assets/video/letters.mp4" poster="assets/img/poster-letters.png"
+                 autoplay loop muted playsinline></video>
+        </div>
+        <p class="card__label">Letters</p>
+        <button class="card__open" type="button" aria-haspopup="dialog" aria-label="Open case study: Letters"><span class="card__expand"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 2.5h4v4"/><path d="M13.5 2.5l-5 5"/><path d="M6.5 13.5h-4v-4"/><path d="M2.5 13.5l5-5"/></svg></span></button>
+      </article>
+    </div>
+
+    <div class="work-row">
+      <article class="card" style="--vx:48px; --vy:38px; --vw:466px; --vh:325px; --mar:1548/1080" data-project="elvex">
+        <div class="card__media">
+          <video src="assets/video/elvex.mp4" autoplay loop muted playsinline></video>
+        </div>
+        <p class="card__label">Elvex</p>
+        <button class="card__open" type="button" aria-haspopup="dialog" aria-label="Open case study: Elvex"><span class="card__expand"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 2.5h4v4"/><path d="M13.5 2.5l-5 5"/><path d="M6.5 13.5h-4v-4"/><path d="M2.5 13.5l5-5"/></svg></span></button>
+      </article>
+
+      <article class="card" style="--vx:48px; --vy:48px; --vw:466px; --vh:303px; --mar:1660/1080" data-project="itgwo">
+        <div class="card__media">
+          <video src="assets/video/itgwo.mp4" autoplay loop muted playsinline></video>
+        </div>
+        <p class="card__label">ITGWO</p>
+        <button class="card__open" type="button" aria-haspopup="dialog" aria-label="Open case study: ITGWO"><span class="card__expand"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 2.5h4v4"/><path d="M13.5 2.5l-5 5"/><path d="M6.5 13.5h-4v-4"/><path d="M2.5 13.5l5-5"/></svg></span></button>
+      </article>
+    </div>
+
+
+    <div class="work-row">
+      <article class="card" style="--vx:48px; --vy:48px; --vw:466px; --vh:266px; --mar:1320/754" data-project="agency-template">
+        <div class="card__media">
+          <video src="assets/video/agency-template.mp4" autoplay loop muted playsinline></video>
+        </div>
+        <p class="card__label">Agency Template</p>
+        <button class="card__open" type="button" aria-haspopup="dialog" aria-label="Open case study: Agency Template"><span class="card__expand"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 2.5h4v4"/><path d="M13.5 2.5l-5 5"/><path d="M6.5 13.5h-4v-4"/><path d="M2.5 13.5l5-5"/></svg></span></button>
+      </article>
+
+      <article class="card" style="--vx:48px; --vy:48px; --vw:466px; --vh:265px; --mar:1896/1080" data-project="moda">
+        <div class="card__media">
+          <video src="assets/video/moda.mp4" autoplay loop muted playsinline></video>
+        </div>
+        <p class="card__label">MODA</p>
+        <button class="card__open" type="button" aria-haspopup="dialog" aria-label="Open case study: MODA"><span class="card__expand"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 2.5h4v4"/><path d="M13.5 2.5l-5 5"/><path d="M6.5 13.5h-4v-4"/><path d="M2.5 13.5l5-5"/></svg></span></button>
+      </article>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── services ───────────────────────── -->
+  <section class="services" aria-labelledby="services-title">
+    <p class="section-label" id="services-title">Services</p>
+    <ul class="services__list">
+      <li class="service">
+        <span class="service__num">01</span>
+        <h3 class="service__name">Web design</h3>
+        <p class="service__desc">Layouts that read fast and make the next step obvious.</p>
+      </li>
+      <li class="service">
+        <span class="service__num">02</span>
+        <h3 class="service__name">Brand design</h3>
+        <p class="service__desc">Identity, type and colour that hold together everywhere.</p>
+      </li>
+      <li class="service">
+        <span class="service__num">03</span>
+        <h3 class="service__name">Code development</h3>
+        <p class="service__desc">Custom HTML, CSS and JavaScript for when a builder isn't enough.</p>
+      </li>
+      <li class="service">
+        <span class="service__num">04</span>
+        <h3 class="service__name">Framer development</h3>
+        <p class="service__desc">Built and published in Framer, ready for your team to edit.</p>
+      </li>
+    </ul>
+  </section>
+
+  <div class="page-cta">
+    <a class="btn" href="https://cal.com/jacobschneider/15min?overlayCalendar=true" target="_blank" rel="noopener">
+      <span class="btn__shine" aria-hidden="true"></span>
+      <span class="btn__label">Book a call</span>
+    </a>
+  </div>
+
+
+  <!-- ───────────────────────── project modal ─────────────────────────
+       Copy below is PLACEHOLDER — edit the <template> for each project.
+       `live` hrefs are "#"; point them at the real URLs.
+  ------------------------------------------------------------------ -->
+  <dialog class="modal" id="modal" aria-labelledby="modal-title">
+    <button class="modal__close" type="button" id="modal-close" aria-label="Close">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+    </button>
+    <div class="modal__body" id="modal-body"></div>
+  </dialog>
+
+  <template id="detail-museum-villa">
+    <div class="detail">
+      <div class="detail__head">
+        <div class="detail__intro">
+          <p class="detail__meta">Design &amp; Framer development · 2025</p>
+          <h2 class="detail__title" id="modal-title">Museum Villa</h2>
+          <p class="detail__lead">Built in spring 2025 together with Studio Somehow — my first proper studio collaboration. The museum’s typographic identity carries the page, with programme and visitor information kept quick to scan on a phone.</p>
+        </div>
+      </div>
+      <div class="detail__media">
+        <video src="assets/video/museum-villa.mp4" poster="assets/img/poster-museum-villa.png" autoplay loop muted playsinline></video>
+      </div>
+    </div>
+  </template>
+
+  <template id="detail-mollie-hive">
+    <div class="detail">
+      <div class="detail__head">
+        <div class="detail__intro">
+          <p class="detail__meta">Framer development · 2025</p>
+          <h2 class="detail__title" id="modal-title">Mollie X Hive</h2>
+          <p class="detail__lead">Event site for Hive, Mollie’s ecommerce showcase at 8 Bishopsgate in London on 16 October 2025. High-contrast type and motion carry the invitation, and every screen has one job: get people to join.</p>
+        </div>
+      </div>
+      <div class="detail__media">
+        <video src="assets/video/mollie-hive.mp4" poster="assets/img/poster-mollie-hive.png" autoplay loop muted playsinline></video>
+      </div>
+    </div>
+  </template>
+
+  <template id="detail-ai-at-mollie">
+    <div class="detail">
+      <div class="detail__head">
+        <div class="detail__intro">
+          <p class="detail__meta">Framer development · 2025</p>
+          <h2 class="detail__title" id="modal-title">AI at Mollie</h2>
+          <p class="detail__lead">Mollie’s AI manifesto on jobs.mollie.com — how the company works with AI, told through figures and product rather than long copy. Built during my summer at Mollie.</p>
+        </div>
+      </div>
+      <div class="detail__media">
+        <video src="assets/video/ai-at-mollie.mp4" autoplay loop muted playsinline></video>
+      </div>
+    </div>
+  </template>
+
+  <template id="detail-letters">
+    <div class="detail">
+      <div class="detail__head">
+        <div class="detail__intro">
+          <p class="detail__meta">Design &amp; development · 2025</p>
+          <h2 class="detail__title" id="modal-title">Letters</h2>
+          <p class="detail__lead">Product landing page for Letters, a tool that transcribes medical letters in seconds — halving transcription costs and writing letters three times faster without changing the clinic’s workflow. One clear promise, and a direct path to sign-up.</p>
+        </div>
+      </div>
+      <div class="detail__media">
+        <video src="assets/video/letters.mp4" poster="assets/img/poster-letters.png" autoplay loop muted playsinline></video>
+      </div>
+    </div>
+  </template>
+
+  <template id="detail-elvex">
+    <div class="detail">
+      <div class="detail__head">
+        <div class="detail__intro">
+          <p class="detail__meta">Design &amp; Framer development</p>
+          <h2 class="detail__title" id="modal-title">Elvex</h2>
+          <p class="detail__lead">A marketing site for Elvex. A restrained, mostly white layout lets the product screens lead, with the interface shown in context instead of described.</p>
+        </div>
+      </div>
+      <div class="detail__media">
+        <video src="assets/video/elvex.mp4" autoplay loop muted playsinline></video>
+      </div>
+    </div>
+  </template>
+
+  <template id="detail-itgwo">
+    <div class="detail">
+      <div class="detail__head">
+        <div class="detail__intro">
+          <p class="detail__meta">Design &amp; Framer development · 2024</p>
+          <h2 class="detail__title" id="modal-title">ITGWO</h2>
+          <p class="detail__lead">My first serious project, end of 2024: the site for Into The Great Wide Open, the festival on Vlieland. A dark, full-bleed stage for the line-up and practical information, designed to be read outdoors on a phone.</p>
+        </div>
+      </div>
+      <div class="detail__media">
+        <video src="assets/video/itgwo.mp4" autoplay loop muted playsinline></video>
+      </div>
+    </div>
+  </template>
+
+  <template id="detail-agency-template">
+    <div class="detail">
+      <div class="detail__head">
+        <div class="detail__intro">
+          <p class="detail__meta">Framer template · 2026</p>
+          <h2 class="detail__title" id="modal-title">Agency Template</h2>
+          <p class="detail__lead">My second Framer template. It launched to almost nothing — around #2000 on the marketplace — so I used the long review window to rebuild it around user feedback, then relaunched it with this promo film.</p>
+        </div>
+      </div>
+      <div class="detail__media">
+        <video src="assets/video/agency-template.mp4" autoplay loop muted playsinline></video>
+      </div>
+    </div>
+  </template>
+
+  <template id="detail-moda">
+    <div class="detail">
+      <div class="detail__head">
+        <div class="detail__intro">
+          <p class="detail__meta">With Red Antler · 2026</p>
+          <h2 class="detail__title" id="modal-title">MODA</h2>
+          <p class="detail__lead">A new project with Red Antler, the New York studio, made over the turn of 2025 into 2026.</p>
+        </div>
+      </div>
+      <div class="detail__media">
+        <video src="assets/video/moda.mp4" autoplay loop muted playsinline></video>
+      </div>
+    </div>
+  </template>
+
+</main>
+
+<script src="assets/js/gsap.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
