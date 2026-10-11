@@ -233,71 +233,85 @@ var gridPaused = false;
   };
 })();
 
-/* Case-study modal: click a card, it expands into a dialog.
-   Uses <dialog>, so Esc, focus trapping and the top layer come for free;
-   the classes only drive the open/close transition. */
-(function projectModal() {
-  var modal = document.getElementById('modal');
-  var body = document.getElementById('modal-body');
-  var closeBtn = document.getElementById('modal-close');
-  if (!modal || !body || !closeBtn || !modal.showModal) return;
+/* Video lightbox: click a card and its reel grows out of the card to fill
+   the screen; click anywhere (or Esc) and it shrinks back into place.
+   (The case-study <template>s are still in index.html, unused for now.)
+   <dialog> gives Esc and the top layer for free; GSAP does the FLIP. */
+(function videoLightbox() {
+  var box = document.getElementById('lightbox');
+  var vid = document.getElementById('lightbox-video');
+  var veil = box && box.querySelector('.lightbox__veil');
+  var closeBtn = document.getElementById('lightbox-close');
+  if (!box || !vid || !box.showModal) return;
 
-  var EXIT = 220;               // keep in sync with .modal's transition
+  var hasGsap = typeof gsap !== 'undefined';
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var source = null;     // the card's own <video>
   var opener = null;
-  var closing = null;
+  var busy = null;
+
+  // the transform that makes the big video sit exactly over the small one
+  function flipFrom(el) {
+    var a = el.getBoundingClientRect(), b = vid.getBoundingClientRect();
+    return {
+      x: a.left + a.width / 2 - (b.left + b.width / 2),
+      y: a.top + a.height / 2 - (b.top + b.height / 2),
+      scaleX: a.width / b.width, scaleY: a.height / b.height
+    };
+  }
 
   function open(card) {
-    var tpl = document.getElementById('detail-' + card.dataset.project);
-    if (!tpl) return;
-
-    clearTimeout(closing);
+    source = card.querySelector('.card__media video');
+    if (!source) return;
     opener = card.querySelector('.card__open');
-    body.replaceChildren(tpl.content.cloneNode(true));
+    if (busy) busy.kill();
 
-    modal.showModal();
+    var ar = source.videoWidth ? source.videoWidth + ' / ' + source.videoHeight
+                               : getComputedStyle(card).getPropertyValue('--mar');
+    box.style.setProperty('--ar', ar);
+    vid.src = source.currentSrc || source.src;
+    try { vid.currentTime = source.currentTime; } catch (e) {}
+
+    box.showModal();
     document.documentElement.classList.add('has-modal');
     if (window.__grid) window.__grid.pause();
+    play(vid);
 
-    // grow out of the card that was clicked. Reading the rect also flushes
-    // style, so adding the class right after reliably starts the transition
-    // (rAF would be throttled in a background tab and skip it).
-    var c = card.getBoundingClientRect();
-    var m = modal.getBoundingClientRect();
-    modal.style.transformOrigin =
-      (c.left + c.width / 2 - m.left) + 'px ' + (c.top + c.height / 2 - m.top) + 'px';
+    if (!hasGsap || reduce) return;
+    busy = gsap.timeline()
+      .fromTo(veil, { opacity: 0 }, { opacity: 1, duration: .35, ease: 'power2.out' }, 0)
+      .fromTo(vid, flipFrom(source),
+        { x: 0, y: 0, scaleX: 1, scaleY: 1, duration: .6, ease: 'expo.out' }, 0)
+      .fromTo(closeBtn, { opacity: 0 }, { opacity: 1, duration: .3 }, .25);
+  }
 
-    modal.scrollTop = 0;
-    modal.classList.add('is-open');
-
-    var v = body.querySelector('video');
-    if (v) play(v);
+  function finish() {
+    box.close();
+    vid.pause();
+    vid.removeAttribute('src'); vid.load();      // unload the big copy
+    document.documentElement.classList.remove('has-modal');
+    if (window.__grid) window.__grid.resume();
+    if (hasGsap) gsap.set([vid, veil, closeBtn], { clearProps: 'all' });
+    if (opener) { opener.focus({ preventScroll: true }); opener = null; }
+    busy = null;
   }
 
   function close() {
-    if (!modal.open) return;
-    modal.classList.remove('is-open');
-    closing = setTimeout(function () {
-      modal.close();
-      body.replaceChildren();            // stops and unloads the reel
-      document.documentElement.classList.remove('has-modal');
-      if (window.__grid) window.__grid.resume();
-      if (opener) { opener.focus(); opener = null; }
-    }, EXIT);
+    if (!box.open) return;
+    if (busy) busy.kill();
+    if (!hasGsap || reduce || !source) return finish();
+    busy = gsap.timeline({ onComplete: finish })
+      .to(closeBtn, { opacity: 0, duration: .15 }, 0)
+      .to(vid, Object.assign(flipFrom(source), { duration: .45, ease: 'power3.inOut' }), 0)
+      .to(veil, { opacity: 0, duration: .35, ease: 'power2.in' }, .1);
   }
 
   document.querySelectorAll('.card__open').forEach(function (btn) {
     btn.addEventListener('click', function () { open(btn.closest('.card')); });
   });
 
-  closeBtn.addEventListener('click', close);
-
-  // Esc: let the dialog's own cancel event run our animated close
-  modal.addEventListener('cancel', function (e) { e.preventDefault(); close(); });
-
-  // click outside the panel
-  modal.addEventListener('click', function (e) {
-    if (e.target === modal) close();
-  });
+  box.addEventListener('click', close);            // anywhere: veil, video, ×
+  box.addEventListener('cancel', function (e) { e.preventDefault(); close(); });
 })();
 
 /* Hero intro.
@@ -714,8 +728,13 @@ var gridPaused = false;
     // settle on whichever milestone is nearest
     if (moved > 2) goTo(active);
   }
-  ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) {
+  ['pointerup', 'pointercancel'].forEach(function (ev) {
     stage.addEventListener(ev, release);
+  });
+  // a mouse leaving the stage ends the drag; a finger keeps dragging (touch
+  // pointers are implicitly captured, and leave fires right after up anyway)
+  stage.addEventListener('pointerleave', function (e) {
+    if (e.pointerType === 'mouse') release();
   });
 
   // a drag shouldn't count as a click on a label

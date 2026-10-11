@@ -661,7 +661,7 @@ img, video { display: block }
    would let them transform, but it also changes where the paragraph breaks. */
 .w { display: inline }
 
-/* ═══════════════════════ card → modal ═════════════════════ */
+/* ═══════════════════════ card → lightbox ══════════════════ */
 /* The whole card is one focusable control; the expand glyph is decoration. */
 .card__open {
   position: absolute;
@@ -702,45 +702,50 @@ img, video { display: block }
   .card__expand { opacity: 1; transform: none }
 }
 
-/* ── the dialog ── */
-.modal {
-  width: min(1200px, 100% - 48px);
-  max-height: min(900px, 100vh - 64px);
-  margin: auto;
+/* ── the lightbox ── */
+.lightbox {
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
   padding: 0;
   border: 0;
-  border-radius: 12px;
-  background: var(--bg);
-  color: var(--ink);
-  overflow: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: none;            /* no visible scrollbar — it still scrolls */
-  -ms-overflow-style: none;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, .08);
-
-  opacity: 0;
-  transform: scale(.96);
-  transition: opacity .22s var(--ease), transform .3s var(--ease);
+  background: none;
+  overflow: hidden;
+  cursor: zoom-out;
 }
-.modal.is-open { opacity: 1; transform: none }
-.modal::-webkit-scrollbar { width: 0; height: 0; display: none }
+.lightbox[open] { display: grid; place-items: center }
+.lightbox::backdrop { background: none }
 
 /* a light wash rather than a dark scrim, to stay in the palette */
-.modal::backdrop {
-  background: rgba(0, 0, 0, 0);
-  backdrop-filter: blur(0px);
-  transition: background-color .25s var(--ease), backdrop-filter .25s var(--ease);
-}
-.modal.is-open::backdrop {
+.lightbox__veil {
+  position: absolute;
+  inset: 0;
   background: var(--veil);
-  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(12px);
+          backdrop-filter: blur(12px);
 }
 
-.modal__close {
+/* as big as fits, at the reel's own aspect, so nothing is cropped */
+.lightbox__video {
+  position: relative;
+  display: block;
+  width: min(1400px, 100vw - 96px, (100dvh - 128px) * (var(--ar, 16 / 9)));
+  aspect-ratio: var(--ar, 16 / 9);
+  height: auto;
+  border-radius: 12px;
+  background: var(--card-bg);
+  object-fit: cover;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+
+.lightbox__close {
   position: absolute;
   top: 20px;
   right: 20px;
-  z-index: 3;
   display: grid;
   place-items: center;
   width: 32px;
@@ -753,60 +758,15 @@ img, video { display: block }
   cursor: pointer;
   transition: color .2s var(--ease), background-color .2s var(--ease);
 }
-.modal__close:hover { color: var(--ink); background: var(--line) }
+.lightbox__close:hover { color: var(--ink); background: var(--line) }
+.lightbox__close:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px }
+.lightbox__close svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round }
 
-/* brand focus ring, rather than the UA default, on everything in the dialog */
-.modal :focus-visible,
-.modal__close:focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 2px;
-  border-radius: 8px;
-}
-.modal__close svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round }
-
-/* ── contents ── */
-.detail { padding: 48px }
-
-.detail__head { padding-bottom: 40px }
-
-.detail__meta {
-  font-size: 15px;
-  line-height: 1.4em;
-  color: var(--ink-40);
-}
-
-.detail__title {
-  margin: 8px 0 0;
-  font-size: 28px;
-  line-height: 1.25em;
-  font-weight: 400;
-  letter-spacing: -.01em;
-}
-
-.detail__lead {
-  margin-top: 16px;
-  max-width: 62ch;
-  font-size: 18px;
-  line-height: 1.4em;
-  color: var(--ink-70);
-}
-
-.detail__media {
-  border-radius: 12px;
-  background: var(--card-bg);
-  overflow: hidden;
-}
-.detail__media video {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-/* no scrolling behind the dialog */
+/* no scrolling behind the lightbox */
 html.has-modal, html.has-modal body { overflow: hidden }
 
 @media (prefers-reduced-motion: reduce) {
-  .modal, .modal::backdrop, .card__expand { transition: none }
+  .card__expand { transition: none }
 }
 
 /* ═══════════════════════ about page ═══════════════════════ */
@@ -887,6 +847,10 @@ html.has-modal, html.has-modal body { overflow: hidden }
   height: 128px;
   overflow: hidden;
   cursor: grab;
+  /* horizontal swipes belong to the ruler; vertical ones still scroll the
+     page. Without this the browser claims the swipe as a pan and cancels the
+     pointer before the drag can start. */
+  touch-action: pan-y;
   /* fade the ruler out at both ends rather than cutting it off */
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
           mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
@@ -1034,9 +998,6 @@ html.has-modal, html.has-modal body { overflow: hidden }
 @media (max-width: 1199.98px) {
   .work-row { padding-left: 32px; padding-right: 32px }
 
-  .detail { padding: 32px }
-  .detail__head { padding-bottom: 32px }
-
 
   /* below the desktop breakpoint the original stops hanging the reel from the
      top padding and centres it in the card at its natural aspect instead */
@@ -1053,7 +1014,7 @@ html.has-modal, html.has-modal body { overflow: hidden }
 
 /* ═══════════════════════ mobile ═══════════════════════════ */
 @media (max-width: 809.98px) {
-  .statusbar, .about, .testimonials, .services { padding-inline: 20px }
+  .statusbar, .about, .testimonials, .works__head, .services { padding-inline: 20px }
   .testimonials { max-width: var(--col) }
 
   .work-row {
@@ -1078,12 +1039,6 @@ html.has-modal, html.has-modal body { overflow: hidden }
   .service { grid-template-columns: 28px minmax(0, 1fr); row-gap: 4px }
   .service__desc { grid-column: 2 }
 
-  .modal { width: calc(100% - 24px); max-height: calc(100vh - 32px) }
-  .modal__close { top: 12px; right: 12px }
-
-  .detail { padding: 24px }
-  .detail__head { padding-bottom: 24px }
-  /* keep the heading clear of the close button */
-  .detail__meta, .detail__title { padding-right: 44px }
-  .detail__title { font-size: 24px }
+  .lightbox__video { width: min(100vw - 32px, (100dvh - 128px) * (var(--ar, 16 / 9))); border-radius: 8px }
+  .lightbox__close { top: 12px; right: 12px }
 }

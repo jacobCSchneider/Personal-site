@@ -57,43 +57,29 @@ text reserving room for them. That breaks as soon as the text reflows, so here:
 
 Both reproduce the original's line breaks exactly at 1440px and 390px.
 
-## Project modal (Stripe-style)
+## Work cards: click to enlarge
 
-Clicking a work card opens a case study in a dialog, matching the interaction
-pattern from Stripe's product pages: a light wash with a blurred backdrop, and
-the panel scaling and fading in **from the card you clicked** (the
-`transform-origin` is set to that card's centre on open).
+Clicking a work card shows **just its reel, bigger** — no case-study text, no
+panel. The video grows out of the card it came from (a GSAP FLIP: the big
+video starts with the transform that lays it exactly over the card's video and
+eases to identity), over a light blurred wash. Click anywhere, press ×, or Esc
+and it shrinks back into the card.
 
-- Built on the native `<dialog>` element, so Esc, focus trapping and top-layer
-  stacking are handled by the browser. The `.is-open` class only drives the
-  transition.
-- Closes on ×, Esc, or a click outside the panel; focus returns to the card.
-- Grid reels pause while the dialog is open and resume on close. The dialog's
-  own reel is cloned in on open and removed on close, so nothing downloads
-  until you actually open a project.
+- Native `<dialog id="lightbox">`, so Esc and top-layer stacking come free.
+- Sized to the reel's own aspect (read from the playing card video, falling
+  back to the card's `--mar`) and as large as fits: up to 1400px wide, 64px
+  clear of the top and bottom on desktop, 16px gutters on mobile. Nothing is
+  cropped.
+- The big copy picks up at the card's `currentTime`, so it looks continuous.
+  Grid reels pause while it's open and resume on close; the big copy's `src`
+  is dropped on close so it stops downloading. Focus goes back to the card.
 - The expand glyph on each card appears on hover, and is always visible on
   touch devices (`@media (hover: none)`).
-- The dialog scrolls if it has to but shows **no scrollbar**
-  (`scrollbar-width: none` plus the `::-webkit-scrollbar` reset).
 
-### What the modal shows
-
-Meta line, title, a short description and the project's reel — nothing else.
-No buttons, no photo grid, no border on the panel; the soft shadow and the
-blurred backdrop separate it from the page.
-
-### Where the modal copy comes from
-
-Pulled from **jacobschneider.framer.media/work** and its project pages — with a
-caveat: every project page there carries the same generic bio, so the only
-project-specific facts it yields are the service, the year, and the live link
-from the archive table. Those are in. The descriptions are written from what
-is verifiable: the timeline Jacob supplied, what the reels themselves show
-(the Hive event is dated and located on screen; Letters states its own
-claims), and the work site's labels.
-
-The work site also gave live links (Letters → letters.app, AI at Mollie →
-jobs.mollie.com/ai-manifesto); they went out with the modal's buttons.
+The case-study modal this replaced is gone for now, but its copy is still in
+`index.html` as eight unused `<template id="detail-…">` blocks (written from
+jacobschneider.framer.media/work — service, year, and what the reels show), in
+case the modal comes back.
 
 ## Services
 
@@ -272,6 +258,12 @@ the stage, so it never reached the label. Capture is now deferred until the
 pointer has actually moved more than 3px — a real drag — leaving plain clicks
 to land normally.
 
+On phones the ruler sets `touch-action: pan-y`. Without it the browser treats
+a horizontal swipe as a page pan, fires `pointercancel` within a few pixels
+and the drag never starts; with it, sideways swipes scrub the ruler and
+vertical ones still scroll the page. A finger sliding off the stage mid-swipe
+no longer ends the drag either — only a mouse leaving does.
+
 A milestone body may contain a link (the Red Antler entry links to MODA), so
 the readout clones the body's nodes rather than copying its text.
 
@@ -350,7 +342,7 @@ about page has a "Back" link where "Open for work" sits on the home page.
 | Daniel Dalen link in About | `href` ends in a stray `\` | cleaned up |
 | "Daniel dalen" on mobile | lowercase `d` (per-breakpoint typo) | "Daniel Dalen" everywhere |
 | Tablet card widths | 388 / 436 (uneven) | equal, as the design intends |
-| Work cards | static | open a case-study modal (copy + reel) |
+| Work cards | static | click to enlarge the reel |
 | Projects | six | eight — Agency Template and MODA added as a fourth row |
 | Services | — | four-row list below Works |
 | Hero | appears instantly | staggered blur-in intro |
