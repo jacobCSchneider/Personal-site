@@ -100,8 +100,18 @@ it. No pricing, no hover. On mobile the line drops under the name.
 
 When the list scrolls into view the hairlines draw themselves in from the left
 one after another and each row rises in behind its line (`servicesReveal` in
-`script.js`). The lines are pseudo-elements driven by a `--draw` custom
-property, because a border can't be scaled.
+`script.js`). It starts as the list clears the bottom 15% of the screen.
+
+Tuned for smoothness:
+- **Lines** are real `<span class="service__rule">`s that `script.js` adds,
+  animated with `scaleX`, which the compositor can run. Before, they were
+  pseudo-elements driven by a `--draw` custom property, so every frame
+  restyled them. Without JS, plain pseudo-element lines stand in.
+- **Easing** is `power3.inOut` over 1.3s for the lines, where `expo.out` used
+  to shoot halfway across almost instantly. The text uses `power2.out` over
+  1s, rising 10px.
+- **Rows** start 0.14s apart and overlap heavily, so the list reads as one
+  wave rather than four steps.
 
 The closing "Book a call" used to sit inside the Works section; it now closes
 the page after Services (`.page-cta`). Services and that button fade in with

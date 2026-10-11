@@ -843,32 +843,53 @@ var gridPaused = false;
   var rows = Array.prototype.slice.call(list.querySelectorAll('.service'));
   var parts = rows.map(function (r) { return r.querySelectorAll('.service__num, .service__name, .service__desc'); });
 
-  gsap.set(rows, { '--draw': 0 });
-  gsap.set(list, { '--draw-end': 0 });
-  parts.forEach(function (p) { gsap.set(p, { opacity: 0, y: 8 }); });
+  // Real elements for the hairlines, so the draw is a plain transform the
+  // compositor can run, rather than a custom property that restyles every
+  // frame. The CSS pseudo-element lines stand in when this never runs.
+  function rule(parent, cls) {
+    var el = document.createElement('span');
+    el.className = 'service__rule' + (cls ? ' ' + cls : '');
+    el.setAttribute('aria-hidden', 'true');
+    parent.appendChild(el);
+    return el;
+  }
+  var rules = rows.map(function (r) { return rule(r); });
+  var endRule = rule(list, 'service__rule--end');
+  list.classList.add('has-rules');
+
+  gsap.set(rules.concat(endRule), { scaleX: 0 });
+  parts.forEach(function (p) { gsap.set(p, { opacity: 0, y: 10 }); });
 
   function play() {
-    var tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
-    // explicit start values: the motion never depends on when GSAP happens
-    // to read the elements' current state
-    rows.forEach(function (row, i) {
-      var at = i * .12;
-      tl.fromTo(row, { '--draw': 0 }, { '--draw': 1, duration: .8, ease: 'expo.out' }, at)
-        .fromTo(parts[i], { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: .6, stagger: .05 }, at + .1);
+    // Gentle curves throughout: the lines ease in and out instead of shooting
+    // across, and the text rises on a long, soft power2 tail. Rows overlap
+    // heavily so it reads as one wave down the list, not four steps.
+    var tl = gsap.timeline({
+      onComplete: function () { gsap.set(rules.concat(endRule), { clearProps: 'willChange' }); }
     });
-    tl.fromTo(list, { '--draw-end': 0 }, { '--draw-end': 1, duration: .8, ease: 'expo.out' }, rows.length * .12);
+    rows.forEach(function (row, i) {
+      var at = i * .14;
+      tl.fromTo(rules[i], { scaleX: 0 },
+          { scaleX: 1, duration: 1.3, ease: 'power3.inOut', willChange: 'transform' }, at)
+        .fromTo(parts[i], { opacity: 0, y: 10 },
+          { opacity: 1, y: 0, duration: 1, ease: 'power2.out', stagger: .07 }, at + .35);
+    });
+    tl.fromTo(endRule, { scaleX: 0 },
+      { scaleX: 1, duration: 1.3, ease: 'power3.inOut' }, rows.length * .14);
 
     // never leave the list half-drawn if rAF is throttled
-    setTimeout(function () { if (tl.progress() < 1) tl.progress(1); }, 4000);
+    setTimeout(function () { if (tl.progress() < 1) tl.progress(1); }, 5000);
   }
 
   if (!('IntersectionObserver' in window)) { play(); return; }
+  // start as the list's top clears the bottom 15% of the screen, so the draw
+  // is already under way by the time the eye gets there
   var io = new IntersectionObserver(function (entries) {
     entries.forEach(function (e) {
       if (!e.isIntersecting) return;
       io.unobserve(e.target);
       play();
     });
-  }, { threshold: .3 });
+  }, { rootMargin: '0px 0px -15% 0px' });
   io.observe(list);
 })();

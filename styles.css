@@ -602,11 +602,10 @@ img, video { display: block }
 
 .services__list { position: relative; margin: 0; padding: 0; list-style: none }
 
-/* The hairlines are pseudo-elements rather than borders so they can be drawn:
-   script.js runs --draw from 0 to 1 when the section comes into view, and
-   each line grows out from the left. */
+/* The hairlines are drawn by script.js: it adds a .service__rule to each row
+   (plus one closing the list) and scales them in from the left. Until then —
+   or if it never runs — plain pseudo-element lines stand in. */
 .service {
-  --draw: 1;
   position: relative;
   display: grid;
   grid-template-columns: 32px minmax(0, 1fr) minmax(0, 1.3fr);
@@ -615,18 +614,22 @@ img, video { display: block }
   padding: 18px 0;
 }
 .service::after,
-.services__list::after {
+.services__list::after,
+.service__rule {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
   height: 1px;
   background: var(--line);
-  transform: scaleX(var(--draw));
   transform-origin: 0 50%;
 }
-.service::after { top: 0 }
-.services__list::after { bottom: 0; transform: scaleX(var(--draw-end, 1)) }
+.service::after,
+.service__rule { top: 0 }
+.services__list::after,
+.service__rule--end { top: auto; bottom: 0 }
+.has-rules > .service::after,
+.services__list.has-rules::after { content: none }
 
 .service__num {
   font-size: 14px;
