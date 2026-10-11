@@ -337,6 +337,19 @@ img, video { display: block }
   vertical-align: -2.7px;
 }
 
+/* Each mark is glued to the name after it: a line may break before the mark,
+   never between it and its name (atomic inlines are break opportunities, so
+   at some widths the chip was left at the end of a line on its own). `pre`
+   rather than `nowrap`, so the padded space runs inside are not collapsed.
+   The Framer pair is only glued on mobile — on desktop the original breaks
+   right after that logo, and that is kept. */
+.glue:not(.glue--m) { white-space: pre }
+
+/* first thing on its line (flagged by JS): no space to pull back into, so
+   no negative margin — the mark lines up with the text edge */
+.glue.at-start .mark { margin-left: 0 }
+.glue.at-start .ico--framer > * { --x: 0px }
+
 /* ── actions ── */
 .about__actions {
   display: flex;
@@ -1027,7 +1040,15 @@ html.has-modal, html.has-modal body { overflow: hidden }
     width: calc(100% - 48px);
   }
 
-  .ico--framer > * { width: 19px; height: 19px; --y: -5px }
+  /* Here "Framer" stays on the logo's line, so the logo needs real room:
+     4.3px before it and 5px after, like the Mollie chip. The anchor is
+     widened by what the 3-space run (15.2px) doesn't cover:
+     4.3 + 19 + 5 - 15.2 = 13.1. */
+  .glue--m { white-space: pre }
+  .ico--framer { width: 13.1px }
+  .ico--framer > * { width: 19px; height: 19px; --x: 4.3px; --y: -5px }
+  .glue.at-start .ico--framer { width: 8.8px }                 /* 13.1 - 4.3 */
+  .glue.at-start .ico--framer > * { --x: 0px }
 
   .page-cta { padding: 0 20px 80px }
 

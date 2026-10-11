@@ -320,6 +320,36 @@ var gridPaused = false;
    So the words are wrapped in plain `display: inline` spans and animated with
    opacity and blur only — never transform, which would need inline-block.
    Links, logo marks and the signature animate whole rather than per word. */
+/* Marks that open a line. Each mark's left margin is tuned against the space
+   in front of it; at the start of a line that space is gone, so the mark would
+   sit indented (Framer) or poke out past the text edge (Dalen). Flag those
+   glues so CSS can drop the margin. Re-checked whenever the wrap can change. */
+(function markLineStarts() {
+  var glues = document.querySelectorAll('.about__text .glue');
+  if (!glues.length) return;
+
+  function check() {
+    glues.forEach(function (g) {
+      g.classList.remove('at-start');
+      var mark = g.firstElementChild;
+      var prev = g.previousSibling;
+      while (prev && !(prev.textContent || '').trim()) prev = prev.previousSibling;
+      if (!mark || !prev) return;
+      var r = document.createRange();
+      r.selectNodeContents(prev);
+      var rects = r.getClientRects();
+      var last = rects[rects.length - 1];
+      var box = mark.getBoundingClientRect();
+      // a different line: the mark's middle is below the previous text's box
+      if (last && box.top + box.height / 2 > last.bottom) g.classList.add('at-start');
+    });
+  }
+
+  check();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(check);
+  addEventListener('resize', check);
+})();
+
 (function heroIntro() {
   var root = document.documentElement;
   var reveal = function () { root.classList.remove('pre-anim'); };

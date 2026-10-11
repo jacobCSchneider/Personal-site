@@ -50,12 +50,23 @@ Framer draws the Framer/Mollie/Red Antler/Daniel Dalen marks as absolutely
 positioned overlays at hard-coded coordinates, with runs of extra spaces in the
 text reserving room for them. That breaks as soon as the text reflows, so here:
 
-- the three company marks are **real inline boxes** with tuned margins, so a line
-  break can never strand a mark away from its name;
-- the Framer mark keeps a **zero-advance anchor**, because the original
-  deliberately lets it hang at the end of line 1 while "Framer expert" wraps.
+- the three company marks are **real inline boxes** with tuned margins, each
+  wrapped with its name in a `.glue` span (`white-space: pre`). An inline box
+  is itself a break opportunity, so without the glue a phone at 375px left the
+  Mollie chip at the end of one line and "Mollie" on the next;
+- the Framer mark keeps a **zero-advance anchor**, because on desktop the
+  original deliberately lets it hang at the end of line 1 while "Framer
+  expert" wraps. On phones "Framer" stays on the logo's line, so there the
+  anchor is widened (13.1px) to give the logo 4.3px before and 5px after —
+  the same air as the Mollie chip — instead of the F running into it, and the
+  pair is glued too.
 
-Both reproduce the original's line breaks exactly at 1440px and 390px.
+The margins are tuned against the space in front of each mark. When a mark
+opens a line that space is gone, so a small script (`markLineStarts`) flags
+those glues with `.at-start` on load, font load and resize, and CSS drops the
+margin: every mark that starts a line now sits exactly on the text edge
+(checked at 320–1440px). Line breaks still match the original at 1440px and
+390px.
 
 ## Work cards: click to enlarge
 
