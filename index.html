@@ -38,6 +38,16 @@
   // The failsafe reveals it anyway if the scripts fail to load.
   document.documentElement.classList.add('pre-anim');
   setTimeout(function () { document.documentElement.classList.remove('pre-anim'); }, 2000);
+
+  // Arriving through the pixel transition: start fully covered in orange, so
+  // the new page never shows before the wave clears it. Failsafe as above.
+  try {
+    if (sessionStorage.getItem('px') === '1') {
+      sessionStorage.removeItem('px');
+      document.documentElement.classList.add('px-in');
+      setTimeout(function () { document.documentElement.classList.remove('px-in'); }, 2500);
+    }
+  } catch (e) {}
 </script>
 <!-- Vercel Web Analytics (static-site version of @vercel/analytics).
      The script is served by Vercel itself, so it only loads on the deployed

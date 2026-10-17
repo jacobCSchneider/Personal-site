@@ -350,6 +350,168 @@ var gridPaused = false;
   addEventListener('resize', check);
 })();
 
+/* Pixel wave page transition, between the home page and the about page.
+   Leaving: a grid of orange squares sweeps in from the left until the screen
+   is covered, then the browser navigates. Arriving: the page starts covered
+   (html.px-in, set before first paint by the inline head script) and the wave
+   carries on to the right, uncovering it. Each column switches with a little
+   random lag, and every square passes through a half-transparent step first,
+   which is what gives the leading edge its ragged, pixelated look. */
+(function pixelTransition() {
+  var root = document.documentElement;
+  var arriving = root.classList.contains('px-in');
+  var clear = function () { root.classList.remove('px-in'); document.dispatchEvent(new Event('px:clear')); };
+
+  if (!window.gsap || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (arriving) clear();
+    return;
+  }
+  window.__pxArriving = arriving;      // the hero intro waits for the wave
+
+  var SPREAD = .7;      // time for the wave to cross the screen
+  var JITTER = .2;      // random lag per square
+  var STEP = .09;       // how long a square sits half-transparent
+  var HOLD = 100;       // ms of full cover before the page actually changes
+  var SETTLE_MIN = 300; // ms the new page stays covered, at least…
+  var SETTLE_MAX = 1200;// …and at most, while it finishes loading
+  // Where along the sweep each column switches. The front should start slow
+  // and end fast, so position maps to time through an ease-out curve — but
+  // not a stock one on its own: sine.out (and anything steeper) flattens out
+  // completely at the end, which means the last columns all switch in the
+  // same instant and the finish hits like a jolt. Blending it 60/40 with
+  // linear keeps a floor under the slope: the front still reaches about three
+  // times its starting speed, but never spikes. The wider jitter and longer
+  // half-step scatter the late squares further.
+  var sine = gsap.parseEase('sine.out');
+  var EASE = function (x) { return .4 * x + .6 * sine(x); };
+
+  var layer = document.createElement('div');
+  layer.className = 'px';
+  layer.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(layer);
+
+  var cells = [];
+  var tl = null;
+
+  function build(opacity) {
+    var w = innerWidth, h = innerHeight;
+    // about 12 squares across a desktop screen, 6 on a phone
+    var size = Math.ceil(Math.max(w, h) / (w < 810 ? 9 : 12));
+    var cols = Math.ceil(w / size), rows = Math.ceil(h / size);
+    var frag = document.createDocumentFragment();
+    cells = [];
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        var el = document.createElement('span');
+        el.className = 'px__cell';
+        // whole-pixel positions and sizes, so squares meet without seams (an
+        // overlap would show as darker lines between half-transparent ones)
+        el.style.cssText = 'left:' + c * size + 'px;top:' + r * size + 'px;width:' +
+          size + 'px;height:' + size + 'px;opacity:' + opacity;
+        frag.appendChild(el);
+        cells.push({ el: el, x: cols > 1 ? c / (cols - 1) : 0 });
+      }
+    }
+    layer.replaceChildren(frag);
+  }
+
+  // one sweep, left to right; `to` is where every square ends up (1 or 0)
+  function wave(to, onDone) {
+    if (tl) tl.kill();
+    tl = gsap.timeline({ onComplete: onDone });
+    var end = 0;
+    cells.forEach(function (cell) {
+      var at = EASE(cell.x) * SPREAD + Math.random() * JITTER;
+      tl.set(cell.el, { opacity: .25 + Math.random() * .4 }, at)
+        .set(cell.el, { opacity: to }, at + STEP);
+      end = Math.max(end, at + STEP);
+    });
+    return end;
+  }
+
+  function leave(href) {
+    layer.classList.add('is-busy');
+    build(0);
+    wave(1, function () {
+      try { sessionStorage.setItem('px', '1'); } catch (e) {}
+      // a beat of solid orange, so the cut to the next page isn't on the
+      // same frame as the last squares landing
+      setTimeout(function () { location.href = href; }, HOLD);
+    });
+    // never strand the visitor under the cover if the timeline can't tick
+    setTimeout(function () {
+      if (tl && tl.progress() < 1) tl.progress(1);
+    }, 2000);
+  }
+
+  if (arriving) {
+    build(1);                       // the grid takes over from the solid cover
+    root.classList.remove('px-in');
+    layer.classList.add('is-busy');
+    // The work reels would otherwise start decoding right under the wave,
+    // and that showed as a stutter in its first frames. They resume after.
+    if (window.__grid) window.__grid.pause();
+
+    // Stay covered while the page finishes loading, so the reveal plays over
+    // a page that is already settled rather than one still laying itself out
+    // — the cut from solid orange to a stuttering wave was the glitch. Wait
+    // for the load event and the fonts, but never less than SETTLE_MIN (so
+    // it reads as a deliberate beat) and never more than SETTLE_MAX.
+    var started = false;
+    var start = function () {
+      if (started) return;
+      started = true;
+      var end = reveal();
+      // the page's own intro starts once the wave is half way across
+      tl.call(function () { document.dispatchEvent(new Event('px:clear')); }, null, end * .45);
+      setTimeout(function () { if (tl && tl.progress() < 1) tl.progress(1); }, 2000);
+    };
+    var loaded = new Promise(function (res) {
+      if (document.readyState === 'complete') res();
+      else addEventListener('load', res, { once: true });
+    });
+    var fonts = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+    var atLeast = new Promise(function (res) { setTimeout(res, SETTLE_MIN); });
+    var atMost = new Promise(function (res) { setTimeout(res, SETTLE_MAX); });
+    Promise.race([Promise.all([loaded, fonts, atLeast]), atMost]).then(function () {
+      // two frames on, so layout and the first paint are behind us
+      requestAnimationFrame(function () { requestAnimationFrame(start); });
+      setTimeout(start, 120);                 // rAF may not run in a hidden tab
+    });
+  }
+
+  function reveal() {
+    layer.classList.add('is-busy');
+    return wave(0, function () {
+      layer.classList.remove('is-busy');
+      layer.replaceChildren();
+      if (window.__grid) window.__grid.resume();
+    });
+  }
+
+  // Coming back with the browser's Back button can restore the old page from
+  // the back/forward cache exactly as it was left: fully covered. Let the
+  // wave carry on and uncover it, as if it had just been reached.
+  addEventListener('pageshow', function (e) {
+    if (!e.persisted || !layer.children.length) return;
+    if (tl) tl.kill();
+    cells.forEach(function (cell) { cell.el.style.opacity = 1; });
+    reveal();
+    setTimeout(function () { if (tl && tl.progress() < 1) tl.progress(1); }, 2000);
+  });
+
+  document.addEventListener('click', function (e) {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    var a = e.target.closest && e.target.closest('a[href]');
+    if (!a || (a.target && a.target !== '_self') || a.hasAttribute('download')) return;
+    var url = new URL(a.href, location.href);
+    if (url.origin !== location.origin || url.pathname === location.pathname) return;
+    if (!/(\.html|\/)$/.test(url.pathname)) return;          // pages, not files
+    e.preventDefault();
+    leave(url.href);
+  });
+})();
+
 (function heroIntro() {
   var root = document.documentElement;
   var reveal = function () { root.classList.remove('pre-anim'); };
@@ -413,15 +575,26 @@ var gridPaused = false;
   // Don't burn the intro while the tab is in the background. Show the hero as
   // it is for now — never leave it sitting at an invisible start state — and
   // play the intro when the page is actually looked at.
+  // Arriving through the page transition: hold the intro until the wave is
+  // half way across, so it plays where it can be seen.
+  var start = run;
+  if (window.__pxArriving) {
+    start = function () {
+      var go = function () { if (go.done) return; go.done = true; run(); };
+      document.addEventListener('px:clear', go, { once: true });
+      setTimeout(go, 2500);
+    };
+  }
+
   if (document.hidden) {
     reveal();
     document.addEventListener('visibilitychange', function onShow() {
       if (document.hidden) return;
       document.removeEventListener('visibilitychange', onShow);
-      run();
+      start();
     });
   } else {
-    run();
+    start();
   }
 })();
 

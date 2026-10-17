@@ -785,6 +785,47 @@ html.has-modal, html.has-modal body { overflow: hidden }
   .card__expand { transition: none }
 }
 
+/* ═══════════════════════ page transition ═════════════════ */
+/* A wave of orange squares sweeps across between pages: it covers the page
+   left to right, the next page loads underneath, and the wave carries on to
+   the right to reveal it. script.js builds the grid; this is just the layer. */
+.px {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+  overflow: hidden;
+}
+.px.is-busy { pointer-events: auto }        /* no stray clicks mid-transition */
+.px__cell {
+  position: absolute;
+  background: var(--accent);
+  opacity: 0;
+}
+
+/* the solid cover a page starts under when it was reached through the wave,
+   until script.js swaps it for the grid */
+html.px-in::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: var(--accent);
+}
+/* the canvas itself too, for browsers that paint it before anything else */
+html.px-in { background: var(--accent) }
+
+/* Cross-document view transition. Without it the browser shows one blank
+   frame between the old page's last paint and the new page's first — white,
+   or black in dark mode — right in the middle of the full-orange beat, which
+   read as a flicker. With it, the old page's snapshot (solid orange) stays up
+   until the new page (also solid orange) has rendered, and the two crossfade:
+   nothing visible changes. Chrome 126+, Safari 18.2+; elsewhere it is simply
+   ignored and the html background above is the fallback. */
+@view-transition { navigation: auto; }
+::view-transition-old(root),
+::view-transition-new(root) { animation-duration: .1s }   /* orange over orange anyway */
+
 /* ═══════════════════════ about page ═══════════════════════ */
 /* Back link, mirroring the status line on the home page. */
 .back {

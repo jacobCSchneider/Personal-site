@@ -243,6 +243,52 @@ with a fixed polarity:
   Dark and `#16202f` in Midnight so the badge doesn't vanish into the page;
 - the orange accent is the same in all five.
 
+## Page transition
+
+Moving between the home page and the about page plays a pixel wave in the
+accent orange (after Osmo's "Pixelated Wave Transition"). A grid of squares
+(about 12 across on desktop, 9 along the long side on phones) sweeps in from
+the left until the screen is covered, the browser navigates, and on the new
+page the wave carries on to the right to uncover it. Each square switches with
+a little random lag and passes through a half-transparent step first, which
+gives the leading edge its ragged, pixelated look (`pixelTransition` in
+`script.js`). The front starts slow and ends fast: each column's position maps to
+its switch time through an ease-out curve, so the first half of the screen
+takes about 60% of the sweep. The curve is `sine.out` blended 60/40 with
+linear rather than a stock ease, because every stock ease-out flattens out
+completely at the end: the last columns then switch in the same instant and
+the finish lands like a jolt. The blend keeps a floor under the front's
+speed (it ends about 3x faster than it starts, never more), and a 100ms hold
+of solid orange separates the last squares landing from the cut to the next
+page.
+
+- **Leaving:** any click on a same-site page link (not new-tab, modifier-key,
+  `mailto:`, external or same-page links) is intercepted, the cover plays
+  (~1s), a `px` flag goes into `sessionStorage`, then the page navigates.
+- **Arriving:** the inline head script sees the flag and adds `html.px-in`
+  before first paint, a solid orange cover, so the new page never flashes. The
+  script swaps that for a fully opaque grid, **waits for the page to settle**
+  (the load event and the fonts; at least 300ms, at most 1.2s) and only then
+  plays the reveal. Without that beat the wave started while the page was
+  still laying itself out and decoding the work reels, and its first frames
+  stuttered — a visible glitch right at the moment of full orange. The reels
+  are paused under the wave and resume after it. The hero intro waits until
+  the wave is half way across.
+- **The cut itself:** both pages opt in to a cross-document view transition
+  (`@view-transition { navigation: auto }`). Without it the browser paints
+  one blank frame between the two documents — white, or black in dark mode —
+  and with orange on both sides of it, that single frame read as a flicker.
+  With it, the old page's snapshot stays up until the new page has rendered
+  and the two crossfade (0.1s, orange over orange, invisible). Chrome 126+
+  and Safari 18.2+; other browsers get `html.px-in { background }` as a
+  partial fallback and may still show the frame.
+- **Back button:** a page restored from the back/forward cache comes back
+  still covered, so it plays the reveal too.
+- **Safety nets:** the cover and reveal are forced to finish 2s after they
+  start if animation frames are throttled, and the head script drops the solid
+  cover after 2.5s if the scripts never load. With reduced motion, links just
+  navigate.
+
 ## About page
 
 `about.html` — same 600px column as the home page, same status line, same
