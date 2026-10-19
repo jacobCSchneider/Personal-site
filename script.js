@@ -149,28 +149,30 @@ function splitWords(root, atomic) {
     tl.to(out.words, {
       opacity: 0, filter: 'blur(5px)', duration: .26, stagger: { each: .008 }
     }, 0)
-      .to(out.el, { y: -16 * dir, duration: .34, ease: 'power2.in' }, 0)
-      .to(out.avatar, { scale: .4, opacity: 0, duration: .26 }, 0);
+      .to(out.el, { y: -16 * dir, duration: .3 }, 0)
+      .to(out.avatar, { scale: .9, opacity: 0, duration: .22 }, 0);
 
     // the block resizes underneath both quotes
     tl.to(wrap, { height: target, duration: .5, ease: 'power3.inOut' }, .04);
 
     // incoming: arrives from the other side, words wash in
-    tl.fromTo(into.el, { y: 20 * dir }, { y: 0, duration: .55 }, .18)
+    tl.fromTo(into.el, { y: 20 * dir }, { y: 0, duration: .45 }, .16)
       .fromTo(into.words,
         { opacity: 0, filter: 'blur(7px)' },
-        { opacity: 1, filter: 'blur(0px)', duration: .5, stagger: { each: .012 } }, .2)
+        { opacity: 1, filter: 'blur(0px)', duration: .45, stagger: { each: .012 } }, .18)
+      // from .9, not from nothing, and no bounce: a click put no momentum in
       .fromTo(into.avatar,
-        { scale: .3, opacity: 0 },
-        { scale: 1, opacity: 1, duration: .5, ease: 'back.out(2.4)' }, .22);
+        { scale: .9, opacity: 0 },
+        { scale: 1, opacity: 1, duration: .4 }, .2);
 
     // indicator: the colour comes from .is-active in CSS; this just adds a
-    // small pop on the bar that takes over
-    tl.fromTo(toDot, { scaleY: .35 }, { scaleY: 1, duration: .45, ease: 'back.out(3)' }, 0);
+    // small stretch on the bar that takes over
+    tl.fromTo(toDot, { scaleY: .6 }, { scaleY: 1, duration: .3 }, 0);
   }
 
+  // press feedback: a short give in the direction of travel
   function nudge(btn, dir) {
-    gsap.fromTo(btn, { x: 4 * dir }, { x: 0, duration: .45, ease: 'power2.out' });
+    gsap.fromTo(btn, { x: 3 * dir }, { x: 0, duration: .18, ease: 'power3.out' });
   }
 
   prev.addEventListener('click', function () { nudge(prev, 1); go(i - 1); });
@@ -281,7 +283,7 @@ var gridPaused = false;
     busy = gsap.timeline()
       .fromTo(veil, { opacity: 0 }, { opacity: 1, duration: .35, ease: 'power2.out' }, 0)
       .fromTo(vid, flipFrom(source),
-        { x: 0, y: 0, scaleX: 1, scaleY: 1, duration: .6, ease: 'expo.out' }, 0)
+        { x: 0, y: 0, scaleX: 1, scaleY: 1, duration: .5, ease: 'expo.out' }, 0)
       .fromTo(closeBtn, { opacity: 0 }, { opacity: 1, duration: .3 }, .25);
   }
 
@@ -302,8 +304,8 @@ var gridPaused = false;
     if (!hasGsap || reduce || !source) return finish();
     busy = gsap.timeline({ onComplete: finish })
       .to(closeBtn, { opacity: 0, duration: .15 }, 0)
-      .to(vid, Object.assign(flipFrom(source), { duration: .45, ease: 'power3.inOut' }), 0)
-      .to(veil, { opacity: 0, duration: .35, ease: 'power2.in' }, .1);
+      .to(vid, Object.assign(flipFrom(source), { duration: .35, ease: 'power3.out' }), 0)
+      .to(veil, { opacity: 0, duration: .3, ease: 'power2.out' }, .05);
   }
 
   document.querySelectorAll('.card__open').forEach(function (btn) {
@@ -350,166 +352,200 @@ var gridPaused = false;
   addEventListener('resize', check);
 })();
 
-/* Pixel wave page transition, between the home page and the about page.
-   Leaving: a grid of orange squares sweeps in from the left until the screen
-   is covered, then the browser navigates. Arriving: the page starts covered
-   (html.px-in, set before first paint by the inline head script) and the wave
-   carries on to the right, uncovering it. Each column switches with a little
-   random lag, and every square passes through a half-transparent step first,
-   which is what gives the leading edge its ragged, pixelated look. */
-(function pixelTransition() {
-  var root = document.documentElement;
-  var arriving = root.classList.contains('px-in');
-  var clear = function () { root.classList.remove('px-in'); document.dispatchEvent(new Event('px:clear')); };
+/* Ring carousel (carousel.html), after Bencho's 3D Card Carousel. The
+   reels sit on a turntable seen from slightly above: the front one is full
+   size, the back ones shrink and ride up. Drag to turn it — the angle is
+   never wrapped, so a card never takes the long way round. Let go and a
+   spring carries the ring on at the finger's own speed, lands where that
+   momentum would have run out (the nearest card to there), and can be
+   grabbed again at any point mid-flight. At rest each card bobs on its own
+   rhythm (CSS). Everything is 2D, so paint order is set by hand from how
+   near the front a card is. Only the front three reels play. */
+(function ringCarousel() {
+  var track = document.getElementById('car-track');
+  if (!track) return;                                    // not this page
 
-  if (!window.gsap || matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    if (arriving) clear();
-    return;
+  var slots = Array.prototype.slice.call(track.querySelectorAll('.car-slot'));
+  var cards = slots.map(function (s) { return s.querySelector('.car-card'); });
+  var vids = slots.map(function (s) { return s.querySelector('video'); });
+  var nameEl = document.getElementById('ring-name');
+  var countEl = document.getElementById('ring-count');
+  var n = slots.length;
+  if (!n) return;
+
+  var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var DEPTH = 100;        // how much smaller the back gets (0–150)
+  var LIFT = 38;          // px the back rides up; keep in sync with --lift
+  var PULL = 140;         // px of drag per card
+  var MAX_THROW = 2;      // cards a flick may carry past the release point
+  var DECEL = .995;       // momentum projection's deceleration rate (per ms)
+  var REST = [-4.2, 2.6, -1.4, 3.8, 1.7];             // each card's resting tilt, deg
+  var BOB = [4.7, 5.9, 6.7, 5.3, 7.1, 6.1];           // bob periods, s
+  var FLOAT = .15;        // how much they drift at rest (0–1)
+  var SPREAD = .62;       // orbit is at least this × the widest card, so the
+                          // neighbours show instead of hiding behind the front one
+  var EASE_OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
+
+  var lift = LIFT, orbit = 0;
+  function measure() {
+    var cs = getComputedStyle(track.parentNode);
+    lift = parseFloat(cs.getPropertyValue('--lift')) || LIFT;
+    var widest = 0;
+    slots.forEach(function (s) { widest = Math.max(widest, s.offsetWidth); });
+    // keep the ring inside the frame where it can, but never so tight that
+    // the front card covers its neighbours; past that the sides run under
+    // the frame's fade
+    orbit = Math.max((track.clientWidth - widest) / 2, widest * SPREAD);
   }
-  window.__pxArriving = arriving;      // the hero intro waits for the wave
 
-  var SPREAD = .7;      // time for the wave to cross the screen
-  var JITTER = .2;      // random lag per square
-  var STEP = .09;       // how long a square sits half-transparent
-  var HOLD = 100;       // ms of full cover before the page actually changes
-  var SETTLE_MIN = 300; // ms the new page stays covered, at least…
-  var SETTLE_MAX = 1200;// …and at most, while it finishes loading
-  // Where along the sweep each column switches. The front should start slow
-  // and end fast, so position maps to time through an ease-out curve — but
-  // not a stock one on its own: sine.out (and anything steeper) flattens out
-  // completely at the end, which means the last columns all switch in the
-  // same instant and the finish hits like a jolt. Blending it 60/40 with
-  // linear keeps a floor under the slope: the front still reaches about three
-  // times its starting speed, but never spikes. The wider jitter and longer
-  // half-step scatter the late squares further.
-  var sine = gsap.parseEase('sine.out');
-  var EASE = function (x) { return .4 * x + .6 * sine(x); };
+  slots.forEach(function (s, i) {
+    var f = s.querySelector('.car-float');
+    f.style.setProperty('--dur', BOB[i % BOB.length] + 's');
+    f.style.setProperty('--bob', (FLOAT * 16).toFixed(2) + 'px');
+    f.style.setProperty('--sway', (FLOAT * 1.4).toFixed(2) + 'deg');
+  });
 
-  var layer = document.createElement('div');
-  layer.className = 'px';
-  layer.setAttribute('aria-hidden', 'true');
-  document.body.appendChild(layer);
+  var turn = 0;                                        // start on the first card
+  var mod = function (a, b) { return ((a % b) + b) % b; };
+  var playing = [];
+  var captionAnim = null;
 
-  var cells = [];
-  var tl = null;
-
-  function build(opacity) {
-    var w = innerWidth, h = innerHeight;
-    // about 12 squares across a desktop screen, 6 on a phone
-    var size = Math.ceil(Math.max(w, h) / (w < 810 ? 9 : 12));
-    var cols = Math.ceil(w / size), rows = Math.ceil(h / size);
-    var frag = document.createDocumentFragment();
-    cells = [];
-    for (var r = 0; r < rows; r++) {
-      for (var c = 0; c < cols; c++) {
-        var el = document.createElement('span');
-        el.className = 'px__cell';
-        // whole-pixel positions and sizes, so squares meet without seams (an
-        // overlap would show as darker lines between half-transparent ones)
-        el.style.cssText = 'left:' + c * size + 'px;top:' + r * size + 'px;width:' +
-          size + 'px;height:' + size + 'px;opacity:' + opacity;
-        frag.appendChild(el);
-        cells.push({ el: el, x: cols > 1 ? c / (cols - 1) : 0 });
+  function place() {
+    var near = [];
+    for (var i = 0; i < n; i++) {
+      var th = (i - turn) * (Math.PI * 2 / n);
+      var f = (Math.cos(th) + 1) / 2;                   // 1 front, 0 back
+      var x = Math.sin(th) * orbit;
+      var y = -(1 - f) * lift;                          // the back rides up
+      var sc = (1 - DEPTH / 200) + (DEPTH / 200) * f;
+      slots[i].style.transform = 'translate(-50%, -50%) translate(' + x.toFixed(2) + 'px, ' +
+        y.toFixed(2) + 'px) rotate(' + REST[i % REST.length] + 'deg) scale(' + sc.toFixed(4) + ')';
+      slots[i].style.zIndex = String(Math.round(f * 100));   // paint order, by hand
+      if (f > .5) near.push(i);                          // the front half of the ring
+    }
+    var front = mod(Math.round(turn), n);
+    if (nameEl && nameEl.textContent !== slots[front].dataset.name) {
+      nameEl.textContent = slots[front].dataset.name;
+      if (countEl) countEl.textContent = (front + 1) + ' / ' + n;
+      // a quick fade over the swap, so the words don't just flip mid-drag
+      if (nameEl.animate && !reduced) {
+        if (captionAnim) captionAnim.cancel();
+        captionAnim = nameEl.animate([{ opacity: .35 }, { opacity: 1 }], { duration: 160, easing: EASE_OUT });
       }
     }
-    layer.replaceChildren(frag);
+    // only the reels at the front play; the rest wait, paused, round the back
+    if (near.join() !== playing.join()) {
+      vids.forEach(function (v, i) {
+        if (!v) return;
+        if (near.indexOf(i) >= 0) { if (v.paused) play(v); }
+        else if (!v.paused) v.pause();
+      });
+      playing = near;
+    }
   }
 
-  // one sweep, left to right; `to` is where every square ends up (1 or 0)
-  function wave(to, onDone) {
-    if (tl) tl.kill();
-    tl = gsap.timeline({ onComplete: onDone });
-    var end = 0;
-    cells.forEach(function (cell) {
-      var at = EASE(cell.x) * SPREAD + Math.random() * JITTER;
-      tl.set(cell.el, { opacity: .25 + Math.random() * .4 }, at)
-        .set(cell.el, { opacity: to }, at + STEP);
-      end = Math.max(end, at + STEP);
-    });
-    return end;
+  /* ── spring: the ring's own motion between gestures ──
+     A spring rather than a timed ease, so it can start at whatever speed
+     the finger let go at (no seam between dragging and gliding) and be
+     grabbed again mid-flight. Apple's two knobs: response (s) and damping
+     ratio — critically damped for a step, a little under for a throw, so
+     the bounce only ever comes from momentum the user put in. */
+  var vel = 0;            // cards per second
+  var raf = 0;
+  function springTo(target, response, zeta) {
+    cancelAnimationFrame(raf);
+    if (reduced) { turn = target; vel = 0; place(); return; }
+    var k = Math.pow(2 * Math.PI / response, 2);
+    var c = 2 * zeta * Math.sqrt(k);
+    var last = performance.now();
+    (function step(now) {
+      var dt = Math.min(32, now - last) / 1000; last = now;
+      var acc = -k * (turn - target) - c * vel;
+      vel += acc * dt;
+      turn += vel * dt;
+      if (Math.abs(turn - target) < .0005 && Math.abs(vel) < .005) { turn = target; vel = 0; place(); return; }
+      place();
+      raf = requestAnimationFrame(step);
+    })(last);
   }
+  function stepBy(d) { vel = 0; springTo(Math.round(turn) + d, .3, 1); }
 
-  function leave(href) {
-    layer.classList.add('is-busy');
-    build(0);
-    wave(1, function () {
-      try { sessionStorage.setItem('px', '1'); } catch (e) {}
-      // a beat of solid orange, so the cut to the next page isn't on the
-      // same frame as the last squares landing
-      setTimeout(function () { location.href = href; }, HOLD);
-    });
-    // never strand the visitor under the cover if the timeline can't tick
-    setTimeout(function () {
-      if (tl && tl.progress() < 1) tl.progress(1);
-    }, 2000);
-  }
-
-  if (arriving) {
-    build(1);                       // the grid takes over from the solid cover
-    root.classList.remove('px-in');
-    layer.classList.add('is-busy');
-    // The work reels would otherwise start decoding right under the wave,
-    // and that showed as a stutter in its first frames. They resume after.
-    if (window.__grid) window.__grid.pause();
-
-    // Stay covered while the page finishes loading, so the reveal plays over
-    // a page that is already settled rather than one still laying itself out
-    // — the cut from solid orange to a stuttering wave was the glitch. Wait
-    // for the load event and the fonts, but never less than SETTLE_MIN (so
-    // it reads as a deliberate beat) and never more than SETTLE_MAX.
-    var started = false;
-    var start = function () {
-      if (started) return;
-      started = true;
-      var end = reveal();
-      // the page's own intro starts once the wave is half way across
-      tl.call(function () { document.dispatchEvent(new Event('px:clear')); }, null, end * .45);
-      setTimeout(function () { if (tl && tl.progress() < 1) tl.progress(1); }, 2000);
-    };
-    var loaded = new Promise(function (res) {
-      if (document.readyState === 'complete') res();
-      else addEventListener('load', res, { once: true });
-    });
-    var fonts = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
-    var atLeast = new Promise(function (res) { setTimeout(res, SETTLE_MIN); });
-    var atMost = new Promise(function (res) { setTimeout(res, SETTLE_MAX); });
-    Promise.race([Promise.all([loaded, fonts, atLeast]), atMost]).then(function () {
-      // two frames on, so layout and the first paint are behind us
-      requestAnimationFrame(function () { requestAnimationFrame(start); });
-      setTimeout(start, 120);                 // rAF may not run in a hidden tab
-    });
-  }
-
-  function reveal() {
-    layer.classList.add('is-busy');
-    return wave(0, function () {
-      layer.classList.remove('is-busy');
-      layer.replaceChildren();
-      if (window.__grid) window.__grid.resume();
-    });
-  }
-
-  // Coming back with the browser's Back button can restore the old page from
-  // the back/forward cache exactly as it was left: fully covered. Let the
-  // wave carry on and uncover it, as if it had just been reached.
-  addEventListener('pageshow', function (e) {
-    if (!e.persisted || !layer.children.length) return;
-    if (tl) tl.kill();
-    cells.forEach(function (cell) { cell.el.style.opacity = 1; });
-    reveal();
-    setTimeout(function () { if (tl && tl.progress() < 1) tl.progress(1); }, 2000);
+  /* ── drag ── */
+  var drag = null;
+  track.addEventListener('pointerdown', function (e) {
+    if (e.button !== 0 || drag) return;                 // one finger drives; extras are ignored
+    cancelAnimationFrame(raf);                          // grab it mid-flight, from where it is
+    drag = { id: e.pointerId, x0: e.clientX, t0: turn, last: e.clientX, t: e.timeStamp, vx: 0 };
+    track.classList.add('is-held');
+    try { track.setPointerCapture(e.pointerId); } catch (err) {}
   });
+  track.addEventListener('pointermove', function (e) {
+    if (!drag || e.pointerId !== drag.id) return;
+    var dt = Math.max(1, e.timeStamp - drag.t);
+    var vx = Math.max(-6, Math.min(6, (e.clientX - drag.last) / dt));   // px/ms; 6 is already a hard flick
+    drag.vx = (drag.vx + vx) / 2;                                        // smoothed
+    drag.last = e.clientX; drag.t = e.timeStamp;
+    turn = drag.t0 - (e.clientX - drag.x0) / PULL;           // 1:1, no clamp, no wrap
+    place();
+  });
+  function release(e) {
+    if (!drag || e.pointerId !== drag.id) return;
+    var d = drag; drag = null;
+    track.classList.remove('is-held');
+    // A finger that stops and then lifts sends no moves while it is still,
+    // so the last recorded speed would still be the swipe's. Only carry
+    // momentum if the release follows straight on from the movement.
+    var vx = e.type === 'pointercancel' || e.timeStamp - d.t > 80 ? 0 : d.vx;
+    vel = -vx * 1000 / PULL;                                 // px/ms → cards/s
+    // land where this momentum would run out, on the nearest card to there
+    var projected = turn + (vel / 1000) * DECEL / (1 - DECEL);
+    var target = Math.round(Math.max(turn - MAX_THROW, Math.min(turn + MAX_THROW, projected)));
+    var thrown = Math.abs(vel) > 1.5;
+    springTo(target, thrown ? .42 : .36, thrown ? .82 : 1);
+  }
+  track.addEventListener('pointerup', release);
+  track.addEventListener('pointercancel', release);
 
-  document.addEventListener('click', function (e) {
-    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    var a = e.target.closest && e.target.closest('a[href]');
-    if (!a || (a.target && a.target !== '_self') || a.hasAttribute('download')) return;
-    var url = new URL(a.href, location.href);
-    if (url.origin !== location.origin || url.pathname === location.pathname) return;
-    if (!/(\.html|\/)$/.test(url.pathname)) return;          // pages, not files
+  track.addEventListener('keydown', function (e) {
+    var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+    if (!d) return;
     e.preventDefault();
-    leave(url.href);
+    stepBy(d);
   });
+
+  measure();
+  place();
+  addEventListener('resize', function () { measure(); place(); });
+
+  // The markup carries each reel's aspect; trust the file once it is known.
+  // (After place() is live: with the files cached this runs synchronously.)
+  vids.forEach(function (v, i) {
+    if (!v) return;
+    var fix = function () {
+      if (!v.videoWidth) return;
+      slots[i].style.setProperty('--ar', v.videoWidth + ' / ' + v.videoHeight);
+      measure(); place();
+    };
+    if (v.readyState >= 1) fix();
+    else v.addEventListener('loadedmetadata', fix, { once: true });
+  });
+
+  /* ── in: the cards rise into place, front first ──
+     Web Animations rather than a rAF tween, so it stays smooth while the
+     reels are still loading, and on the card (not the slot, which the ring
+     owns, nor the float, which the bob owns). */
+  function enter() {
+    cards.forEach(function (card, i) {
+      if (!card.animate) return;
+      var rank = Math.min(i, n - i);                     // distance from the front, in cards
+      card.animate(
+        reduced ? [{ opacity: 0 }, { opacity: 1 }]
+                : [{ opacity: 0, transform: 'translateY(16px) scale(.96)' }, { opacity: 1, transform: 'none' }],
+        { duration: reduced ? 200 : 520, delay: reduced ? 0 : rank * 55, easing: EASE_OUT, fill: 'backwards' });
+    });
+  }
+  enter();
 })();
 
 (function heroIntro() {
@@ -518,7 +554,10 @@ var gridPaused = false;
 
   // Other animations (the about photo) wait for this. The attribute is for
   // anything that starts listening late; the event for anything already waiting.
+  var finished = false;
   var done = function () {
+    if (finished) return;
+    finished = true;
     root.setAttribute('data-intro', 'done');
     document.dispatchEvent(new Event('intro:done'));
   };
@@ -526,75 +565,72 @@ var gridPaused = false;
   var para = document.querySelector('.about__text');
   var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  if (!para || !window.gsap || reduced) { reveal(); done(); return; }
+  if (!para || !para.animate || reduced) { reveal(); done(); return; }
 
   // Links, logo marks and the signature animate whole rather than per word.
   var units = splitWords(para, 'a, .mark, .ico, .signature');
 
   var statusRow = document.querySelector('.statusbar__row');
   var label = document.querySelector('.about > .section-label');
-  var actions = document.querySelectorAll('.about__actions > *');
-  var later = document.querySelectorAll('.testimonials, .works, .services, .page-cta');   // home only
+  var actions = Array.prototype.slice.call(document.querySelectorAll('.about__actions > *'));
+  var later = Array.prototype.slice.call(document.querySelectorAll('.testimonials, .works, .services, .page-cta'));   // home only
 
+  var OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
+  var SOFT = 'cubic-bezier(0.25, 1, 0.5, 1)';
+
+  /* Web Animations rather than a rAF tween: this plays while the page is at
+     its busiest (fonts settling, eight reels starting to load), and a
+     requestAnimationFrame loop is the first thing to drop frames then. These
+     run off the main thread. `fill: backwards` holds each start state from
+     the moment the animation is created, so the class can drop in the same
+     tick and nothing ever paints un-animated; with no forwards fill, every
+     element returns to its own style when done — the words to plain,
+     subpixel-rendered text with no filter left on them. */
   function run() {
-    // Start state and reveal happen in the same tick, so the browser never
-    // paints the hero un-animated.
-    gsap.set(units, { opacity: 0, filter: 'blur(7px)' });
-    gsap.set([statusRow, label], { opacity: 0, y: 6 });
-    gsap.set(actions, { opacity: 0, y: 10 });
-    gsap.set(later, { opacity: 0 });
-    gsap.set(para, { opacity: 1 });
+    var anims = [];
+    var end = 0;
+    var add = function (el, frames, ms, at, easing) {
+      if (!el) return;
+      anims.push(el.animate(frames, { duration: ms, delay: at, easing: easing || OUT, fill: 'backwards' }));
+      end = Math.max(end, at + ms);
+    };
+    var rise = function (px) { return [{ opacity: 0, transform: 'translateY(' + px + 'px)' }, { opacity: 1, transform: 'none' }]; };
+
+    add(statusRow, rise(6), 700, 0);
+    add(label, rise(6), 600, 250);
+    // the paragraph, word by word, as a wave of blur moving left to right
+    var t = 550;
+    units.forEach(function (u, k) {
+      add(u, [{ opacity: 0, filter: 'blur(7px)' }, { opacity: 1, filter: 'blur(0px)' }], 750, t + k * 18);
+    });
+    var wordsEnd = t + (units.length - 1) * 18 + 750;
+    actions.forEach(function (a, k) { add(a, rise(10), 600, wordsEnd - 500 + k * 80); });
+    var actionsEnd = actions.length ? wordsEnd - 500 + (actions.length - 1) * 80 + 600 : wordsEnd;
+    // only once the text has landed: the rest of the page, a plain fade
+    later.forEach(function (el, k) { add(el, [{ opacity: 0 }, { opacity: 1 }], 800, actionsEnd - 150 + k * 150, SOFT); });
+
     reveal();
 
-    var tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
-      .to(statusRow, { opacity: 1, y: 0, duration: .7 })
-      .to(label, { opacity: 1, y: 0, duration: .6 }, '-=.45')
-      .to(units, {
-        opacity: 1,
-        filter: 'blur(0px)',
-        duration: .75,
-        stagger: { each: .018 },
-        // drop the filter so the text goes back to subpixel rendering
-        onComplete: function () { gsap.set(units, { clearProps: 'filter,willChange' }); }
-      }, '-=.3');
-
-    // Empty tweens still take up time on a timeline, so these are only added
-    // when there is something to animate — the about page has neither, and
-    // otherwise its photo would wait ~0.7s for nothing.
-    if (actions.length) tl.to(actions, { opacity: 1, y: 0, duration: .6, stagger: .08 }, '-=.5');
-    // only once the text has landed: the rest of the page, a plain fade
-    if (later.length) tl.to(later, { opacity: 1, duration: .8, ease: 'power2.out', stagger: .15 }, '>-.15');
-    tl.add(done);
-
-    // GSAP runs on requestAnimationFrame, which browsers throttle hard in
-    // background or occluded tabs. Without this the hero could sit at its
-    // start state — invisible — so force the end state if it never ran.
-    setTimeout(function () { if (tl.progress() < 1) tl.progress(1); }, 5500);
+    Promise.all(anims.map(function (a) { return a.finished; })).then(done, function () {});
+    // never leave the page waiting on an animation that can't finish
+    setTimeout(function () {
+      anims.forEach(function (a) { try { if (a.playState !== 'finished') a.finish(); } catch (e) {} });
+      done();
+    }, end + 1500);
   }
 
   // Don't burn the intro while the tab is in the background. Show the hero as
   // it is for now — never leave it sitting at an invisible start state — and
   // play the intro when the page is actually looked at.
-  // Arriving through the page transition: hold the intro until the wave is
-  // half way across, so it plays where it can be seen.
-  var start = run;
-  if (window.__pxArriving) {
-    start = function () {
-      var go = function () { if (go.done) return; go.done = true; run(); };
-      document.addEventListener('px:clear', go, { once: true });
-      setTimeout(go, 2500);
-    };
-  }
-
   if (document.hidden) {
     reveal();
     document.addEventListener('visibilitychange', function onShow() {
       if (document.hidden) return;
       document.removeEventListener('visibilitychange', onShow);
-      start();
+      run();
     });
   } else {
-    start();
+    run();
   }
 })();
 
@@ -820,14 +856,40 @@ var gridPaused = false;
   var pos = items[0].x;                           // where the needle sits, in strip px
   var active = -1;
 
-  var setX = window.gsap
-    ? gsap.quickTo(strip, 'x', { duration: .45, ease: 'power3' })
-    : function (v) { strip.style.transform = 'translateX(' + v + 'px)'; };
+  /* The strip's own motion. A drag writes its position straight through, 1:1
+     with the finger; everything else — a click, a key, a release — hands the
+     target to a spring, which starts from wherever the strip is and at
+     whatever speed it already has, so a release glides on from the drag
+     with no seam and a new target mid-flight just bends the path. */
+  var cur = 0, v = 0, raf = 0;           // strip offset in px, and px/s
+  var reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function setXNow(x) {
+    cancelAnimationFrame(raf);
+    cur = x; v = 0;
+    strip.style.transform = 'translate3d(' + x.toFixed(2) + 'px, 0, 0)';
+  }
+  function springX(target, v0) {
+    cancelAnimationFrame(raf);
+    if (reducedMotion) { setXNow(target); return; }
+    if (typeof v0 === 'number') v = v0;
+    var k = Math.pow(2 * Math.PI / .4, 2);  // response .4s
+    var c = 2 * Math.sqrt(k);               // critically damped: no overshoot on a ruler
+    var last = performance.now();
+    (function step(now) {
+      var dt = Math.min(32, now - last) / 1000; last = now;
+      v += (-k * (cur - target) - c * v) * dt;
+      cur += v * dt;
+      if (Math.abs(cur - target) < .05 && Math.abs(v) < 1) { cur = target; v = 0; }
+      strip.style.transform = 'translate3d(' + cur.toFixed(2) + 'px, 0, 0)';
+      if (cur !== target) raf = requestAnimationFrame(step);
+    })(last);
+  }
 
   function paint(animate) {
     var offset = stage.clientWidth / 2 - pos;
-    if (animate === false && window.gsap) gsap.set(strip, { x: offset });
-    else setX(offset);
+    if (animate === true) springX(offset, animate === true && typeof paint.v0 === 'number' ? paint.v0 : undefined);
+    else setXNow(offset);
+    paint.v0 = undefined;
 
     // nearest milestone wins
     var first = active === -1;
@@ -846,7 +908,7 @@ var gridPaused = false;
     // The crosshair only reaches up to the word once it is genuinely on the
     // milestone, so dragging past one doesn't make it flail.
     var on = bestD < 10;
-    stage.style.setProperty('--needle-h', (on ? items[best].reach : NEEDLE_BASE) + 'px');
+    stage.style.setProperty('--needle-s', ((on ? items[best].reach : NEEDLE_BASE) / 96).toFixed(4));
   }
 
   var readoutTl = null;
@@ -877,33 +939,39 @@ var gridPaused = false;
     readoutTl = gsap.timeline()
       .to([dateEl, textEl], {
         opacity: 0,
-        duration: .25, ease: 'power2.out',
+        duration: .18, ease: 'power2.out',
         onComplete: fill
       })
       .fromTo([dateEl, textEl],
         { y: 2, filter: 'blur(2px)' },
         {
           opacity: 1, y: 0, filter: 'blur(0px)',
-          duration: .5, ease: 'power2.out',
+          duration: .35, ease: 'power3.out',
           // drop the filter so the text renders with subpixel antialiasing again
           onComplete: function () { gsap.set([dateEl, textEl], { clearProps: 'filter' }); }
         });
   }
 
-  function goTo(i, animate) {
+  function goTo(i, animate, v0) {
     i = Math.max(0, Math.min(items.length - 1, i));
     pos = items[i].x;
-    paint(animate);
+    paint.v0 = v0;
+    paint(animate !== false);
   }
 
   var clamp = function (v) { return Math.max(0, Math.min(total, v)); };
 
   /* ── drag ── */
   var down = false, startX = 0, startPos = 0, moved = 0;
+  var lastX = 0, lastT = 0, vx = 0;              // finger speed, px/ms, smoothed
+  var DECEL = .995;                              // momentum projection, per ms
 
   stage.addEventListener('pointerdown', function (e) {
-    down = true; moved = 0;
-    startX = e.clientX; startPos = pos;
+    if (down) return;                            // one pointer drives it
+    cancelAnimationFrame(raf);                   // grab it mid-glide, from where it is
+    pos = clamp(stage.clientWidth / 2 - cur);    // …which is here, not where it was headed
+    down = true; moved = 0; vx = 0;
+    startX = lastX = e.clientX; lastT = e.timeStamp; startPos = pos;
     stage.classList.add('is-dragging');
   });
 
@@ -917,16 +985,26 @@ var gridPaused = false;
     if (moved > 3 && stage.setPointerCapture) {
       try { stage.setPointerCapture(e.pointerId); } catch (err) {}
     }
+    var dt = Math.max(1, e.timeStamp - lastT);
+    vx = (vx + Math.max(-6, Math.min(6, (e.clientX - lastX) / dt))) / 2;
+    lastX = e.clientX; lastT = e.timeStamp;
     pos = clamp(startPos - dx);
-    paint();
+    paint(false);                                // 1:1 with the finger
   });
 
-  function release() {
+  function release(e) {
     if (!down) return;
     down = false;
     stage.classList.remove('is-dragging');
-    // settle on whichever milestone is nearest
-    if (moved > 2) goTo(active);
+    if (moved <= 2) return;                      // that was a click; the click handler has it
+    // A finger that stops and then lifts sends no moves while it is still,
+    // so only carry momentum if the release follows straight on from it.
+    var speed = e && e.type !== 'pointercancel' && e.timeStamp - lastT <= 80 ? vx : 0;
+    // land on the milestone nearest to where this speed would run out
+    var projected = clamp(pos - speed * DECEL / (1 - DECEL));
+    var best = 0, bestD = Infinity;
+    items.forEach(function (it, i) { var d = Math.abs(it.x - projected); if (d < bestD) { bestD = d; best = i; } });
+    goTo(best, true, speed * 1000);              // the strip moves with the finger: px/ms → px/s
   }
   ['pointerup', 'pointercancel'].forEach(function (ev) {
     stage.addEventListener(ev, release);
@@ -934,7 +1012,7 @@ var gridPaused = false;
   // a mouse leaving the stage ends the drag; a finger keeps dragging (touch
   // pointers are implicitly captured, and leave fires right after up anyway)
   stage.addEventListener('pointerleave', function (e) {
-    if (e.pointerType === 'mouse') release();
+    if (e.pointerType === 'mouse') release(e);
   });
 
   // a drag shouldn't count as a click on a label
@@ -954,7 +1032,7 @@ var gridPaused = false;
     if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) return;   // let the page scroll
     e.preventDefault();
     pos = clamp(pos + e.deltaX);
-    paint();
+    paint(false);
   }, { passive: false });
 
   stage.addEventListener('keydown', function (e) {

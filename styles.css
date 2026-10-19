@@ -31,7 +31,9 @@
   --on-ink:    #fff;                       /* text on a solid --ink fill */
 
   --col:       600px;   /* centred reading column */
-  --ease:      cubic-bezier(.44, 0, .56, 1);
+  --ease:      ease;                               /* hover and colour */
+  --ease-out:  cubic-bezier(0.23, 1, 0.32, 1);     /* entering, exiting, state changes */
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);  /* moving on screen */
 }
 
 /* ── themes ──────────────────────────────────────────────
@@ -144,7 +146,9 @@ img, video { display: block }
   stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round;
   transition: transform .2s var(--ease);
 }
-.section-label--link:hover svg { transform: translateX(2px) }
+@media (hover: hover) and (pointer: fine) {
+  .section-label--link:hover svg { transform: translateX(2px) }
+}
 
 /* shared link treatment — the grey rule under links is an underline,
    not a separate element as in the Framer export */
@@ -212,7 +216,9 @@ img, video { display: block }
   box-shadow: inset 0 0 0 1px rgba(128, 128, 128, .35);
   transition: transform .18s var(--ease);
 }
-.sw:hover { transform: scale(1.18) }
+@media (hover: hover) and (pointer: fine) {
+  .sw:hover { transform: scale(1.18) }
+}
 .sw:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px }
 
 /* the active one keeps a ring in the current theme's ink */
@@ -396,10 +402,18 @@ img, video { display: block }
   height: 29px;
   background: var(--shine, var(--ink));
   filter: blur(6px);
-  transform: rotate(20deg);
-  transition: left .55s var(--ease);
+  /* translate is written after rotate, so it moves along the page's x axis
+     and not the rotated one; transform rather than `left`, so the sweep is
+     composited instead of re-laid-out every frame */
+  transform: translateX(0) rotate(20deg);
+  transition: transform .55s var(--ease-in-out);
 }
-.btn:hover .btn__shine { left: 104px }
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover .btn__shine { transform: translateX(148px) rotate(20deg) }   /* -44px → 104px */
+}
+/* feedback lives on the press, and it is instant */
+.btn { transition: transform .16s var(--ease-out) }
+.btn:active { transform: scale(.97) }
 
 @media (prefers-reduced-motion: reduce) {
   .btn__shine { transition: none }
@@ -445,7 +459,7 @@ img, video { display: block }
   width: 100%;
   opacity: 0;
   pointer-events: none;
-  transition: opacity .3s var(--ease);
+  transition: opacity .25s var(--ease-out);
 }
 .slide.is-active {
   position: relative;
@@ -516,9 +530,10 @@ img, video { display: block }
   background: none;
   cursor: pointer;
   opacity: .7;
-  transition: opacity .2s var(--ease);
+  transition: opacity .2s var(--ease), transform .16s var(--ease-out);
 }
 .arrow:hover { opacity: 1 }
+.arrow:active { transform: scale(.9) }
 /* the original never dims the arrows at the ends, so neither do we */
 .arrow[aria-disabled="true"] { cursor: default }
 
@@ -705,13 +720,15 @@ img, video { display: block }
   color: var(--ink-40);
   opacity: 0;
   transform: scale(.9);
-  transition: opacity .2s var(--ease), transform .2s var(--ease), color .2s var(--ease);
+  transition: opacity .2s var(--ease-out), transform .2s var(--ease-out), color .2s var(--ease);
 }
 .card__expand svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round }
 
-.card:hover .card__expand,
+@media (hover: hover) and (pointer: fine) {
+  .card:hover .card__expand { opacity: 1; transform: none }
+  .card__open:hover .card__expand { color: var(--ink) }
+}
 .card__open:focus-visible .card__expand { opacity: 1; transform: none }
-.card__open:hover .card__expand { color: var(--ink) }
 
 /* touch devices have no hover, so always show the affordance */
 @media (hover: none) {
@@ -785,47 +802,6 @@ html.has-modal, html.has-modal body { overflow: hidden }
   .card__expand { transition: none }
 }
 
-/* ═══════════════════════ page transition ═════════════════ */
-/* A wave of orange squares sweeps across between pages: it covers the page
-   left to right, the next page loads underneath, and the wave carries on to
-   the right to reveal it. script.js builds the grid; this is just the layer. */
-.px {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  pointer-events: none;
-  overflow: hidden;
-}
-.px.is-busy { pointer-events: auto }        /* no stray clicks mid-transition */
-.px__cell {
-  position: absolute;
-  background: var(--accent);
-  opacity: 0;
-}
-
-/* the solid cover a page starts under when it was reached through the wave,
-   until script.js swaps it for the grid */
-html.px-in::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  background: var(--accent);
-}
-/* the canvas itself too, for browsers that paint it before anything else */
-html.px-in { background: var(--accent) }
-
-/* Cross-document view transition. Without it the browser shows one blank
-   frame between the old page's last paint and the new page's first — white,
-   or black in dark mode — right in the middle of the full-orange beat, which
-   read as a flicker. With it, the old page's snapshot (solid orange) stays up
-   until the new page (also solid orange) has rendered, and the two crossfade:
-   nothing visible changes. Chrome 126+, Safari 18.2+; elsewhere it is simply
-   ignored and the html background above is the fallback. */
-@view-transition { navigation: auto; }
-::view-transition-old(root),
-::view-transition-new(root) { animation-duration: .1s }   /* orange over orange anyway */
-
 /* ═══════════════════════ about page ═══════════════════════ */
 /* Back link, mirroring the status line on the home page. */
 .back {
@@ -845,7 +821,9 @@ html.px-in { background: var(--accent) }
   stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
   transition: transform .2s var(--ease);
 }
-.back:hover svg { transform: translateX(-2px) }
+@media (hover: hover) and (pointer: fine) {
+  .back:hover svg { transform: translateX(-2px) }
+}
 
 /* ── photo ── */
 .shot-full {
@@ -912,7 +890,7 @@ html.px-in { background: var(--accent) }
 
 /* the fixed playhead */
 /* The crosshair. Anchored by its foot rather than its head, so it can grow
-   upward: when it lands on a milestone JS raises --needle-h and it reaches up
+   upward: when it lands on a milestone JS raises --needle-s and it reaches up
    to touch the word. calc() rather than a fixed `bottom` so the stage can be
    any height. */
 .ruler__needle {
@@ -921,11 +899,13 @@ html.px-in { background: var(--accent) }
   left: 50%;
   z-index: 2;
   width: 2px;
-  height: var(--needle-h, 34px);
+  height: 96px;                          /* its full reach; JS scales it from the foot */
   margin-left: -1px;
   border-radius: 36px;
   background: var(--accent);
-  transition: height .35s var(--ease);
+  transform-origin: 50% 100%;
+  transform: scaleY(var(--needle-s, .3542));   /* 34px of 96 at rest */
+  transition: transform .35s var(--ease-out);
 }
 
 .ruler__strip {
@@ -1034,16 +1014,114 @@ html.px-in { background: var(--accent) }
   padding-top: 8px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity .3s var(--ease);
+  transition: opacity .25s var(--ease-out);
 }
 .ruler__cta.is-on { opacity: 1; pointer-events: auto }
 
 @media (max-width: 809.98px) {
-  .shot-full, .ruler__head, .ruler__readout { padding-inline: 20px }
+  .shot-full, .ruler__head, .ruler__readout, .ring__head, .ring__caption, .ring__hint { padding-inline: 20px }
   .ruler__head { flex-direction: column; gap: 6px; align-items: flex-start }
   .ruler__stage { height: 120px }
   .ms__title { font-size: 15px }
   .ruler__text { font-size: 17px }
+}
+
+
+/* ═══════════════════════ carousel page ═══════════════════ */
+/* Reels on a ring (after Bencho's 3D Card Carousel). Two motions on two
+   elements, one transform each — the slot carries the ring (JS), the float
+   carries the bob (CSS keyframes). The ring runs edge to edge and the cards
+   are big, so the outermost ones can run past the sides; a mask fades them
+   out there rather than cutting them off. */
+.page--carousel { padding-bottom: 180px }
+
+.ring { width: 100% }
+.ring__head, .ring__caption, .ring__hint { width: 100%; max-width: var(--col); margin-inline: auto }
+.ring__head { padding-bottom: 28px }
+
+.car {
+  --card-h: clamp(180px, 30vw, 440px);   /* the front card; width follows each reel's aspect */
+  --lift: 38px;                          /* how far the back of the ring rides up */
+  position: relative;
+  width: 100%;
+  height: calc(var(--card-h) + var(--lift) + 48px);
+  overflow: hidden;
+}
+/* The side fades are two gradient overlays in the page colour, not a mask:
+   a mask on a stage this size with eight reels in it would have the whole
+   thing re-composited through the mask every frame. */
+.car::before,
+.car::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 9%;
+  z-index: 200;                          /* above every card (they top out at 100) */
+  pointer-events: none;
+  background: linear-gradient(90deg, var(--bg), transparent);
+}
+.car::before { left: 0 }
+.car::after { right: 0; transform: scaleX(-1) }
+.car-track {
+  position: absolute;
+  inset: 0;
+  cursor: grab;
+  touch-action: pan-y;                   /* sideways is ours, up and down still scrolls */
+  -webkit-user-select: none;
+          user-select: none;
+}
+.car-track.is-held { cursor: grabbing }
+.car-track:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px }
+
+.car-slot {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + var(--lift) / 2);     /* the ring sits low so the lift has room */
+  height: var(--card-h);
+  aspect-ratio: var(--ar, 16 / 9);
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+.car-float {
+  width: 100%;
+  height: 100%;
+  animation: car-bob var(--dur, 5s) ease-in-out infinite;
+}
+@keyframes car-bob {
+  0%, 100% { transform: translateY(calc(var(--bob, 2.4px) * -1)) rotate(calc(var(--sway, .2deg) * -1)) }
+  50%      { transform: translateY(var(--bob, 2.4px)) rotate(var(--sway, .2deg)) }
+}
+.car-card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--card-bg);
+  box-shadow: 0 12px 28px -10px rgba(0, 0, 0, .28);
+}
+.car-card video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.ring__caption {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 20px;
+  font-size: 15px;
+  line-height: 1.4em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.ring__count { color: var(--ink-40) }
+.ring__hint { padding-top: 4px; font-size: 14px; line-height: 1.4em; color: var(--ink-40) }
+
+@media (prefers-reduced-motion: reduce) {
+  .car-float { animation: none }
 }
 
 /* ═══════════════════════ tablet ═══════════════════════════ */
@@ -1101,4 +1179,8 @@ html.px-in { background: var(--accent) }
 
   .lightbox__video { width: min(100vw - 32px, (100dvh - 128px) * (var(--ar, 16 / 9))); border-radius: 8px }
   .lightbox__close { top: 12px; right: 12px }
+
+  /* carousel: a lower lift on a phone, where the cards are smaller too */
+  .car { --lift: 28px }
+  .car::before, .car::after { width: 6% }
 }

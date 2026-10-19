@@ -117,17 +117,25 @@ The closing "Book a call" used to sit inside the Works section; it now closes
 the page after Services (`.page-cta`). Services and that button fade in with
 the rest of the page once the hero text has finished.
 
-## Hero intro (GSAP)
+## Hero intro (Web Animations API)
 
 On load the hero plays a staggered blur-in: status bar, then the "About" label,
 then the paragraph word by word as a wave of `blur(7px) → 0` moving left to
 right, then the two buttons. Only once that has landed do Testimonials, Works,
 Services and the closing button fade in — a plain fade, no blur, 150ms apart.
-About 3.3s end to end.
+About 3.2s end to end, all on the strong ease-out `cubic-bezier(0.23, 1, 0.32, 1)`.
 
-GSAP 3.15 core is **self-hosted** in `assets/js/` — no CDN, so the site still
-works offline. No plugins needed; the word splitting is ~20 lines in
-`script.js`.
+It runs on the **Web Animations API**, not GSAP: this plays while the page is
+at its busiest (fonts settling, eight reels starting to load), which is exactly
+when a `requestAnimationFrame` loop drops frames, and WAAPI animations run off
+the main thread. Each animation is created with `fill: backwards` in the same
+tick the hiding class drops, so nothing paints un-animated; with no forwards
+fill, every element returns to its own style when done — the words to plain,
+subpixel-rendered text with no filter left on them.
+
+GSAP 3.15 core is still **self-hosted** in `assets/js/` for the gesture-driven
+and scroll-driven pieces (testimonials, lightbox, services, timeline readout);
+no plugins. The word splitting is ~20 lines in `script.js`.
 
 **Why not SplitText:** the About paragraph is fragile. `white-space: pre-wrap`
 plus the inline logo marks mean anything that changes inline layout moves the
@@ -138,8 +146,9 @@ line breaks, and the whole point of the rebuild was matching them exactly. So:
 - word wrappers are `display: inline`, never `inline-block` — inline-block
   would allow a `y` transform but also shifts where lines break;
 - the movement therefore comes from opacity and blur only;
-- the `filter` is cleared on complete, so the final text renders with normal
-  subpixel antialiasing rather than staying on a composited layer.
+- nothing is left on the words afterwards (no forwards fill), so the final
+  text renders with normal subpixel antialiasing rather than staying on a
+  composited layer.
 
 Verified after the change: paragraph height, every mark position and every line
 break are identical to before.
@@ -148,11 +157,11 @@ break are identical to before.
 
 - an inline script in `<head>` hides the hero before first paint, with a 2s
   timeout that reveals it anyway if the scripts never load;
-- the timeline waits for `visibilitychange` if the page opens in a background
+- the intro waits for `visibilitychange` if the page opens in a background
   tab — and reveals the hero unanimated in the meantime, so it is never left
   sitting at an invisible start state;
-- a 4s failsafe forces the end state if `requestAnimationFrame` is throttled
-  and the timeline never ticks;
+- a failsafe 1.5s after the last animation should have ended finishes them all
+  and fires `intro:done` regardless;
 - `prefers-reduced-motion: reduce` skips the whole thing, text straight to
   final state.
 
@@ -160,8 +169,12 @@ break are identical to before.
 
 Switching reviews is direction-aware. The outgoing quote blurs away and drifts
 in the direction of travel, the incoming one arrives from the opposite side and
-its words wash in, the avatar pops in with a slight overshoot, and the active
-indicator bar springs up from a squashed scale.
+its words wash in, the avatar fades up from scale .9, and the active indicator
+bar stretches up from .6. Everything eases out (`power3.out`), exits included —
+an ease-in on an exit delays the moment the eye is on — and nothing bounces: a
+click puts no momentum in, so an overshoot would be invented. The arrows give
+3px in the direction of travel for 180ms on press, and squeeze to .9 while held.
+About 0.65s end to end.
 
 The part that actually matters: **the block's height is tweened**. The four
 quotes are 76 / 25 / 101 / 25 px tall on desktop, so previously the arrows below
@@ -196,6 +209,10 @@ Verified unchanged against the Framer original afterwards: slide heights
 pill, 106×35. The original's hover sheen is kept too — a blurred shape that
 sweeps across on hover in the pill's own colour, so it is invisible there and
 here. Set `--shine` (e.g. `rgba(255,255,255,.28)`) on `.btn` to actually see it.
+The sweep is a `transform`, not an animated `left` (which would re-lay the
+button out every frame), and it only runs on devices that hover. A press
+squeezes the pill to `scale(.97)` in 160ms — feedback on the touch-down, not
+the release.
 
 ## Colour modes
 
@@ -243,52 +260,6 @@ with a fixed polarity:
   Dark and `#16202f` in Midnight so the badge doesn't vanish into the page;
 - the orange accent is the same in all five.
 
-## Page transition
-
-Moving between the home page and the about page plays a pixel wave in the
-accent orange (after Osmo's "Pixelated Wave Transition"). A grid of squares
-(about 12 across on desktop, 9 along the long side on phones) sweeps in from
-the left until the screen is covered, the browser navigates, and on the new
-page the wave carries on to the right to uncover it. Each square switches with
-a little random lag and passes through a half-transparent step first, which
-gives the leading edge its ragged, pixelated look (`pixelTransition` in
-`script.js`). The front starts slow and ends fast: each column's position maps to
-its switch time through an ease-out curve, so the first half of the screen
-takes about 60% of the sweep. The curve is `sine.out` blended 60/40 with
-linear rather than a stock ease, because every stock ease-out flattens out
-completely at the end: the last columns then switch in the same instant and
-the finish lands like a jolt. The blend keeps a floor under the front's
-speed (it ends about 3x faster than it starts, never more), and a 100ms hold
-of solid orange separates the last squares landing from the cut to the next
-page.
-
-- **Leaving:** any click on a same-site page link (not new-tab, modifier-key,
-  `mailto:`, external or same-page links) is intercepted, the cover plays
-  (~1s), a `px` flag goes into `sessionStorage`, then the page navigates.
-- **Arriving:** the inline head script sees the flag and adds `html.px-in`
-  before first paint, a solid orange cover, so the new page never flashes. The
-  script swaps that for a fully opaque grid, **waits for the page to settle**
-  (the load event and the fonts; at least 300ms, at most 1.2s) and only then
-  plays the reveal. Without that beat the wave started while the page was
-  still laying itself out and decoding the work reels, and its first frames
-  stuttered — a visible glitch right at the moment of full orange. The reels
-  are paused under the wave and resume after it. The hero intro waits until
-  the wave is half way across.
-- **The cut itself:** both pages opt in to a cross-document view transition
-  (`@view-transition { navigation: auto }`). Without it the browser paints
-  one blank frame between the two documents — white, or black in dark mode —
-  and with orange on both sides of it, that single frame read as a flicker.
-  With it, the old page's snapshot stays up until the new page has rendered
-  and the two crossfade (0.1s, orange over orange, invisible). Chrome 126+
-  and Safari 18.2+; other browsers get `html.px-in { background }` as a
-  partial fallback and may still show the frame.
-- **Back button:** a page restored from the back/forward cache comes back
-  still covered, so it plays the reveal too.
-- **Safety nets:** the cover and reveal are forced to finish 2s after they
-  start if animation frames are throttled, and the head script drops the solid
-  cover after 2.5s if the scripts never load. With reduced motion, links just
-  navigate.
-
 ## About page
 
 `about.html` — same 600px column as the home page, same status line, same
@@ -315,9 +286,20 @@ it**, or tab to it and use the arrow keys (`Home` / `End` for the ends). No
 hint text above it. None of the text on the ruler takes pointer events and the
 stage can't start a text selection, so dragging never catches a label; a click
 is matched to a label by its rect instead. It's
-exposed as a `role="slider"` with `aria-valuenow`. Releasing a drag settles
-onto the nearest milestone. The "Book a call" button only appears on the final
-milestone.
+exposed as a `role="slider"` with `aria-valuenow`. The "Book a call" button
+only appears on the final milestone.
+
+**How it moves.** A drag writes the strip's position straight through, 1:1
+with the finger (it used to trail it on a 450ms tween). Everything else — a
+click, a key, a release — hands the target to a critically damped spring
+(response 0.4s), which starts from wherever the strip is and at whatever speed
+it already has. So a release glides on from the drag with no seam, a flick
+carries: the landing milestone is the one nearest to where that speed would
+run out (momentum projection, `d = .995`), and grabbing the strip mid-glide
+picks it up from where it is. A release more than 80ms after the last movement
+carries no momentum. The needle's reach is a `scaleY` from its foot rather than
+an animated `height`. The readout swap is a 180ms fade out and a 350ms rise in,
+short because scrubbing swaps it tens of times.
 
 Click-to-jump needed a fix that isn't obvious: the stage called
 `setPointerCapture` on `pointerdown`, which retargets the following `click` to
@@ -399,6 +381,38 @@ each a single `<li>` if you want them back.
 The **About** label on the home page is the link to it, with a small arrow on
 hover — the site had no navigation, and an unreachable page is no use. The
 about page has a "Back" link where "Open for work" sits on the home page.
+
+## Motion principles
+
+Every animation on the site was passed through Emil Kowalski's `animate`,
+`review-animations`, `animation-performance` and `apple-design` skills
+(installed in `.agents/skills/`). The rules that now hold everywhere:
+
+- **Properties:** `transform` and `opacity` only (plus `filter` blur under
+  20px). The button sheen, the timeline needle and the hero's word reveal all
+  moved off `left` / `height` / inline-style sweeps onto transforms.
+- **Easing tokens:** `--ease-out: cubic-bezier(0.23, 1, 0.32, 1)` for anything
+  entering, exiting or changing state; `--ease-in-out: cubic-bezier(0.77, 0,
+  0.175, 1)` for things moving on screen; plain `ease` for hover and colour.
+  No `ease-in` on UI anywhere.
+- **Nothing from nothing:** entrances start from `scale(.9)` or a few px of
+  travel, never from `scale(0)` or a bare fade.
+- **Bounce only from momentum:** springs are critically damped unless the
+  user threw something (the carousel after a flick).
+- **Gestures:** 1:1 tracking, pointer capture, one pointer at a time,
+  velocity hand-off into a spring, momentum projection for the landing point,
+  grab-able mid-flight.
+- **Busy main thread:** anything that plays during load (hero intro, carousel
+  entrance) runs on CSS or the Web Animations API; GSAP is kept for motion the
+  page drives after it has settled.
+- **Hover motion** is gated to `(hover: hover) and (pointer: fine)`; press
+  feedback lives on `:active` at 160ms.
+- **Reduced motion** keeps the opacity and colour changes and drops the
+  movement, on every piece.
+
+The pixel-wave page transition that briefly lived between the home and about
+pages is gone: a cross-document navigation can't be made seamless in every
+browser, and a one-frame flash in the middle of it broke the illusion.
 
 ## Deliberate differences from the live site
 
