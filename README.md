@@ -393,8 +393,13 @@ the mask: ahead of it the page you were on, behind it the next one.
   hero intro, photo fade, timeline, services and carousel entrances are
   skipped: the page is fully rendered the moment the band reveals it. On a
   hard load they play as before.
+- **Direction.** Left to right on desktop and tablet; on phones (below
+  810px) bottom to top, because a band crossing a tall, narrow screen
+  sideways is over in a few hundred pixels while one rising from the bottom
+  has the whole height to travel. Decided per sweep, so rotating the phone
+  picks the right one.
 - **History.** `pushState` per hop, `scrollRestoration` manual; back and
-  forward replay the sweep right to left. A fetched document is cloned in,
+  forward replay the sweep the other way (right to left, top to bottom). A fetched document is cloned in,
   not moved, so the cache can serve the same page again.
 - **Settings** are the `SWEEP` object at the top of `pageSweep`: palette (the
   seven named ones, or `glimm.accentPair('#ff8c00', …)` for one built on the

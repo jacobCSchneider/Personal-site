@@ -1133,7 +1133,7 @@ initPage();
 (function pageSweep() {
   var SWEEP = {
     palette: 'ember',      // spectrum · prism · berry · lagoon · citrus · azure · ember, or glimm.accentPair('#ff8c00', '#ffd166')
-    direction: 'ltr',
+    direction: 'ltr',      // on phones: 'btt' (see dir() below)
     sweepMs: 1600,
     easing: 'ease',
     bandTight: 9,
@@ -1151,6 +1151,18 @@ initPage();
   var cache = {};
 
   function glimm() { return window.glimm; }
+
+  // A phone is tall and narrow: a band crossing it sideways is over in a
+  // few hundred pixels, while one rising from the bottom has the whole
+  // height to travel. So below the mobile breakpoint the sweep runs bottom
+  // to top, and back/forward top to bottom. Decided per sweep, so a
+  // rotated or resized window gets the right one.
+  var phone = matchMedia('(max-width: 809.98px)');
+  var FLIP = { ltr: 'rtl', rtl: 'ltr', ttb: 'btt', btt: 'ttb' };
+  function dir(back) {
+    var d = phone.matches ? 'btt' : SWEEP.direction;
+    return back ? FLIP[d] : d;
+  }
 
   /* ── fetching ── */
   function load(url) {
@@ -1279,7 +1291,7 @@ initPage();
     var a = e.target.closest && e.target.closest('a[href]');
     if (!isPageLink(a)) return;
     e.preventDefault();
-    go(new URL(a.href, location.href), SWEEP.direction, true);
+    go(new URL(a.href, location.href), dir(false), true);
   });
   // start the fetch as soon as a page link is hovered, so the click never waits
   document.addEventListener('pointerover', function (e) {
@@ -1290,6 +1302,6 @@ initPage();
   history.replaceState({ soft: true }, '', location.href);
   addEventListener('popstate', function (e) {
     if (!e.state || !e.state.soft) { location.reload(); return; }
-    go(new URL(location.href), SWEEP.direction === 'ltr' ? 'rtl' : 'ltr', false);
+    go(new URL(location.href), dir(true), false);
   });
 })();
