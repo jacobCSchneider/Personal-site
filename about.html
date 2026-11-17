@@ -22,17 +22,6 @@
 <link rel="preload" as="font" type="font/woff2" crossorigin href="assets/fonts/zmjM2ePSvHOZ43x5hgbOQjVZPRM.woff2">
 <link rel="stylesheet" href="styles.css">
 <script>
-  // Resolve the theme before first paint so it can't flash the wrong one.
-  (function () {
-    var ok = ['light', 'dark', 'paper'];
-    var t;
-    try { t = localStorage.getItem('theme'); } catch (e) {}
-    if (ok.indexOf(t) < 0) {
-      t = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-    document.documentElement.setAttribute('data-theme', t);
-  })();
-
   // Hide the intro before first paint so it can't flash unanimated.
   // The failsafe reveals it anyway if the scripts fail to load.
   document.documentElement.classList.add('pre-anim');
@@ -60,11 +49,6 @@
         </a>
       </div>
       <div class="statusbar__side statusbar__side--end">
-        <div class="themes" id="themes" aria-label="Colour theme">
-          <button class="sw sw--light" type="button" data-theme-id="light" aria-label="Light theme"></button>
-          <button class="sw sw--dark" type="button" data-theme-id="dark" aria-label="Dark theme"></button>
-          <button class="sw sw--paper" type="button" data-theme-id="paper" aria-label="Paper theme"></button>
-        </div>
         <p class="statusbar__city">AMS</p>
       </div>
       <span class="statusbar__divider" aria-hidden="true"></span>
@@ -174,6 +158,12 @@
 </main>
 
 <script src="assets/js/gsap.min.js"></script>
+<script type="module">
+  // glimm's framework-agnostic core (glimm.dev, MIT), vendored. Module scripts
+  // run after script.js; the transition picks it up on the first click.
+  import * as glimm from './assets/js/glimm/index.js';
+  window.glimm = glimm;
+</script>
 <script src="script.js"></script>
 </body>
 </html>

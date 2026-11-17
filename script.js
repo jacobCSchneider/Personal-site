@@ -1,6 +1,6 @@
 /* jacobschneider.design — clock + testimonial carousel */
 
-(function clock() {
+function clock() {
   var el = document.getElementById('clock');
   if (!el) return;
 
@@ -17,8 +17,9 @@
   }
 
   tick();
-  setInterval(tick, 1000);
-})();
+  clearInterval(clock.timer);
+  clock.timer = setInterval(tick, 1000);
+}
 
 /* Wrap bare words in `display: inline` spans so they can be staggered.
    Elements matching `atomic` are returned whole instead of being split, and
@@ -57,7 +58,7 @@ function splitWords(root, atomic) {
   return units;
 }
 
-(function carousel() {
+function carousel() {
   var wrap = document.getElementById('slides');
   var slides = Array.prototype.slice.call(document.querySelectorAll('#slides .slide'));
   var dots = Array.prototype.slice.call(document.querySelectorAll('#dots .dot'));
@@ -192,15 +193,15 @@ function splitWords(root, atomic) {
       gsap.set(wrap, { height: 'auto' });
       gsap.set(wrap, { height: heightOf(parts[i]) });
     }, 150);
-  });
-})();
+  }, { signal: pageSignal() });
+}
 
 /* Play the work reels only while they are on screen, and keep nudging
    play() — some browsers ignore the autoplay attribute until there is data. */
 var play = function (v) { var p = v.play(); if (p && p.catch) p.catch(function () {}); };
 var gridPaused = false;
 
-(function videos() {
+function videos() {
   var vids = Array.prototype.slice.call(document.querySelectorAll('.card video'));
   if (!vids.length) return;
 
@@ -233,13 +234,13 @@ var gridPaused = false;
       });
     }
   };
-})();
+}
 
 /* Video lightbox: click a card and its reel grows out of the card to fill
    the screen; click anywhere (or Esc) and it shrinks back into place.
    (The case-study <template>s are still in index.html, unused for now.)
    <dialog> gives Esc and the top layer for free; GSAP does the FLIP. */
-(function videoLightbox() {
+function videoLightbox() {
   var box = document.getElementById('lightbox');
   var vid = document.getElementById('lightbox-video');
   var veil = box && box.querySelector('.lightbox__veil');
@@ -314,7 +315,7 @@ var gridPaused = false;
 
   box.addEventListener('click', close);            // anywhere: veil, video, ×
   box.addEventListener('cancel', function (e) { e.preventDefault(); close(); });
-})();
+}
 
 /* Hero intro.
    The About paragraph is delicate: `white-space: pre-wrap` plus the inline
@@ -326,7 +327,7 @@ var gridPaused = false;
    in front of it; at the start of a line that space is gone, so the mark would
    sit indented (Framer) or poke out past the text edge (Dalen). Flag those
    glues so CSS can drop the margin. Re-checked whenever the wrap can change. */
-(function markLineStarts() {
+function markLineStarts() {
   var glues = document.querySelectorAll('.about__text .glue');
   if (!glues.length) return;
 
@@ -349,8 +350,8 @@ var gridPaused = false;
 
   check();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(check);
-  addEventListener('resize', check);
-})();
+  addEventListener('resize', check, { signal: pageSignal() });
+}
 
 /* Ring carousel (carousel.html), after Bencho's 3D Card Carousel. The
    reels sit on a turntable seen from slightly above: the front one is full
@@ -361,7 +362,7 @@ var gridPaused = false;
    grabbed again at any point mid-flight. At rest each card bobs on its own
    rhythm (CSS). Everything is 2D, so paint order is set by hand from how
    near the front a card is. Only the front three reels play. */
-(function ringCarousel() {
+function ringCarousel() {
   var track = document.getElementById('car-track');
   if (!track) return;                                    // not this page
 
@@ -516,7 +517,7 @@ var gridPaused = false;
 
   measure();
   place();
-  addEventListener('resize', function () { measure(); place(); });
+  addEventListener('resize', function () { measure(); place(); }, { signal: pageSignal() });
 
   // The markup carries each reel's aspect; trust the file once it is known.
   // (After place() is live: with the files cached this runs synchronously.)
@@ -545,10 +546,10 @@ var gridPaused = false;
         { duration: reduced ? 200 : 520, delay: reduced ? 0 : rank * 55, easing: EASE_OUT, fill: 'backwards' });
     });
   }
-  enter();
-})();
+  if (!pageArrived) enter();
+}
 
-(function heroIntro() {
+function heroIntro() {
   var root = document.documentElement;
   var reveal = function () { root.classList.remove('pre-anim'); };
 
@@ -565,7 +566,7 @@ var gridPaused = false;
   var para = document.querySelector('.about__text');
   var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  if (!para || !para.animate || reduced) { reveal(); done(); return; }
+  if (!para || !para.animate || reduced || pageArrived) { reveal(); done(); return; }
 
   // Links, logo marks and the signature animate whole rather than per word.
   var units = splitWords(para, 'a, .mark, .ico, .signature');
@@ -628,71 +629,22 @@ var gridPaused = false;
       if (document.hidden) return;
       document.removeEventListener('visibilitychange', onShow);
       run();
-    });
+    }, { signal: pageSignal() });
   } else {
     run();
   }
-})();
+}
 
-/* Colour themes. The active one is resolved before first paint by the inline
-   script in <head>; this wires the swatches up to it. */
-(function themes() {
-  var root = document.documentElement;
-  var wrap = document.getElementById('themes');
-  if (!wrap) return;
-
-  var swatches = Array.prototype.slice.call(wrap.querySelectorAll('.sw'));
-  var mq = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : null;
-  var chosen = null;
-  try { chosen = localStorage.getItem('theme'); } catch (e) {}
-
-  function sync() {
-    var cur = root.getAttribute('data-theme');
-    swatches.forEach(function (s) {
-      s.setAttribute('aria-pressed', String(s.dataset.themeId === cur));
-    });
-  }
-
-  function apply(next, remember) {
-    // Suppress every transition, swap, flush the new styles, restore. Without
-    // the flush in the middle the browser would coalesce all three and the
-    // transitions would run anyway.
-    root.classList.add('theming');
-    root.setAttribute('data-theme', next);
-    sync();                               // inside the window, so the ring moves instantly too
-    void document.body.offsetWidth;
-    root.classList.remove('theming');
-
-    if (remember) {
-      chosen = next;
-      try { localStorage.setItem('theme', next); } catch (e) {}
-    }
-  }
-
-  swatches.forEach(function (s) {
-    s.addEventListener('click', function () { apply(s.dataset.themeId, true); });
-  });
-
-  // follow the OS while the visitor hasn't picked a theme themselves
-  if (mq && mq.addEventListener) {
-    mq.addEventListener('change', function (e) {
-      if (chosen) return;
-      apply(e.matches ? 'dark' : 'light', false);
-    });
-  }
-
-  sync();
-})();
 
 
 /* ── about page ──────────────────────────────────────────────
    Reveals are driven by IntersectionObserver firing GSAP timelines rather
    than ScrollTrigger, so the page needs no extra plugin. */
-(function aboutPage() {
+function aboutPage() {
   var photo = document.getElementById('photo');
   if (!photo) return;                                  // not this page
 
-  if (!window.gsap || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (!window.gsap || matchMedia('(prefers-reduced-motion: reduce)').matches || pageArrived) return;
 
   var img = photo.querySelector('img');
 
@@ -721,7 +673,7 @@ var gridPaused = false;
   }
 
   if (!textDone) {
-    document.addEventListener('intro:done', function () { textDone = true; maybe(); }, { once: true });
+    document.addEventListener('intro:done', function () { textDone = true; maybe(); }, { once: true, signal: pageSignal() });
   }
 
   if (!inView) {
@@ -737,13 +689,13 @@ var gridPaused = false;
   }
 
   maybe();
-})();
+}
 
 /* ── timeline ruler ──────────────────────────────────────────
    The strip slides under a needle fixed at the centre; whichever milestone is
    nearest the needle is the active one. Everything is positioned from the
    `data-date` on each <li>, so the markup stays the single source of truth. */
-(function rulerTimeline() {
+function rulerTimeline() {
   var root = document.getElementById('ruler');
   if (!root) return;
 
@@ -1043,7 +995,7 @@ var gridPaused = false;
     else if (k === 'End') { e.preventDefault(); goTo(items.length - 1); }
   });
 
-  addEventListener('resize', function () { reserve(); measureReach(); paint(false); });
+  addEventListener('resize', function () { reserve(); measureReach(); paint(false); }, { signal: pageSignal() });
 
   /* Reserve the tallest body's height so swapping milestones never nudges the
      page. Measured rather than guessed in CSS, so editing the copy can't
@@ -1062,7 +1014,7 @@ var gridPaused = false;
   reserve();
   paint(false);
 
-  if (!window.gsap || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (!window.gsap || matchMedia('(prefers-reduced-motion: reduce)').matches || pageArrived) return;
 
   gsap.set(stage, { opacity: 0, y: 18 });
   gsap.set([dateEl, textEl], { opacity: 0 });
@@ -1081,15 +1033,15 @@ var gridPaused = false;
     });
   }, { threshold: .2 });
   io.observe(root);
-})();
+}
 
 /* ── services: lines draw in, rows follow ────────────────────
    Runs when the list comes into view. The whole section also fades in with
    the rest of the page after the hero; this is the detail inside it. */
-(function servicesReveal() {
+function servicesReveal() {
   var list = document.querySelector('.services__list');
   if (!list || !window.gsap) return;
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches || pageArrived) return;
 
   var rows = Array.prototype.slice.call(list.querySelectorAll('.service'));
   var parts = rows.map(function (r) { return r.querySelectorAll('.service__num, .service__name, .service__desc'); });
@@ -1143,4 +1095,201 @@ var gridPaused = false;
     });
   }, { rootMargin: '0px 0px -15% 0px' });
   io.observe(list);
+}
+
+/* ═══════════════════ page lifecycle ═══════════════════
+   Every module above is scoped to the <main> on screen. On first load they
+   run once; on a soft navigation (below) the <main> is swapped and they run
+   again for the new one. Listeners on window/document are registered with
+   pageSignal(), so the old page's die when it goes. */
+var pageAbort = null;
+function pageSignal() { return pageAbort.signal; }
+// true while a page that arrived through the sweep is being set up: the
+// entrance animations (hero intro, photo, timeline, services, carousel) are
+// skipped, because the band is the entrance
+var pageArrived = false;
+
+function initPage() {
+  if (pageAbort) pageAbort.abort();
+  pageAbort = new AbortController();
+  [clock, carousel, videos, videoLightbox, markLineStarts, ringCarousel,
+   heroIntro, aboutPage, rulerTimeline, servicesReveal].forEach(function (m) {
+    try { m(); } catch (e) { console.error('[page]', m.name, e); }
+  });
+}
+initPage();
+
+/* ═══════════════════ page transition (glimm) ═══════════════════
+   Clicking a page link no longer reloads the document. The next page is
+   fetched (on hover already), and on the click glimm's band — the
+   framework-agnostic core of glimm.dev, vendored in assets/js/glimm/ —
+   makes one pass across the screen. The band is the mask: ahead of it the
+   old page, behind it the new one. The old <main> is lifted into a fixed
+   layer that looks exactly as it did (same scroll offset), the new <main>
+   goes into the flow underneath it with its entrance animations skipped,
+   and every frame the old layer's mask-image is cut along the band's
+   leading edge, so the band sits right over the seam. When the band has
+   left, the old layer goes. Back and forward do the same, right to left. */
+(function pageSweep() {
+  var SWEEP = {
+    palette: 'ember',      // spectrum · prism · berry · lagoon · citrus · azure · ember, or glimm.accentPair('#ff8c00', '#ffd166')
+    direction: 'ltr',
+    sweepMs: 1600,
+    easing: 'ease',
+    bandTight: 9,
+    swellAmount: .55,
+    waveAmount: 1.4,
+    rippleAmount: 1.3,
+    waveSpeed: .9,
+    peakAlpha: 1,
+    brightness: 1.05,
+    outroMs: 220
+  };
+
+  var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var ctrl = null, canvas = null, active = null;
+  var cache = {};
+
+  function glimm() { return window.glimm; }
+
+  /* ── fetching ── */
+  function load(url) {
+    var key = url.pathname;
+    if (!cache[key]) {
+      cache[key] = fetch(url.href, { credentials: 'same-origin' })
+        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+        .then(function (html) { return new DOMParser().parseFromString(html, 'text/html'); })
+        .catch(function (e) { delete cache[key]; throw e; });
+    }
+    return cache[key];
+  }
+  function isPageLink(a) {
+    if (!a || (a.target && a.target !== '_self') || a.hasAttribute('download') || a.hasAttribute('data-glimm-skip')) return false;
+    var url = new URL(a.href, location.href);
+    return url.origin === location.origin && /(\.html|\/)$/.test(url.pathname) && url.pathname !== location.pathname;
+  }
+
+  /* ── the swap: new page in the flow, old page frozen on top ── */
+  function swap(doc, url, push) {
+    var next = doc.querySelector('main');
+    var cur = document.querySelector('main');
+    if (!next || !cur) throw new Error('no <main>');
+    var root = document.documentElement;
+
+    // Freeze the old page where it is: a fixed, viewport-sized layer with
+    // the old <main> inside, shifted up by the scroll offset so nothing
+    // moves. This is what the band wipes away.
+    var old = document.createElement('div');
+    old.className = 'page-old';
+    old.setAttribute('aria-hidden', 'true');
+    old.style.background = getComputedStyle(document.body).backgroundColor;
+    var inner = document.createElement('div');
+    inner.style.cssText = 'position:absolute;left:0;right:0;top:' + (-scrollY) + 'px';
+    cur.replaceWith(old);
+    inner.appendChild(cur);
+    old.appendChild(inner);
+    document.body.appendChild(old);
+
+    // the new page, fully rendered — the band is its entrance
+    root.classList.remove('pre-anim');
+    root.removeAttribute('data-intro');
+    root.classList.remove('has-modal');
+    old.insertAdjacentElement('beforebegin', document.importNode(next, true));   // a copy: the cache serves it again on back
+    document.title = doc.title;
+    var desc = doc.querySelector('meta[name="description"]'), mine = document.querySelector('meta[name="description"]');
+    if (desc && mine) mine.setAttribute('content', desc.getAttribute('content'));
+    if (push) history.pushState({ soft: true }, '', url.href);
+    scrollTo(0, 0);
+    pageArrived = true;
+    try { initPage(); } finally { pageArrived = false; }
+    return old;
+  }
+
+  function ensure() {
+    var g = glimm();
+    if (!g || ctrl) return !!ctrl;
+    canvas = document.createElement('canvas');
+    canvas.setAttribute('aria-hidden', 'true');
+    canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:1000;pointer-events:none;display:block';
+    document.body.appendChild(canvas);
+    ctrl = g.createShader({ canvas: canvas, palette: g.resolvePalette(SWEEP.palette), bandTight: SWEEP.bandTight, direction: SWEEP.direction,
+                            waveAmount: SWEEP.waveAmount, rippleAmount: SWEEP.rippleAmount, waveSpeed: SWEEP.waveSpeed, swellAmount: SWEEP.swellAmount });
+    if (!ctrl) { canvas.remove(); canvas = null; return false; }
+    return true;
+  }
+
+  /* ── one sweep ── */
+  function go(url, direction, push) {
+    var g = glimm();
+    load(url).then(function (doc) {
+      // no band to show (or nobody looking): just swap
+      if (reduced || document.hidden || !ensure()) {
+        swap(doc, url, push).remove();
+        return;
+      }
+      if (active) active.finish();
+      var old = swap(doc, url, push);
+      var root = document.documentElement;
+      root.classList.add('is-sweeping');
+
+      // the old layer's mask follows the band: visible ahead of it, gone
+      // behind it, with the same soft 6% edge glimm's own curtain uses
+      var axis = { ltr: 'right', rtl: 'left', ttb: 'bottom', btt: 'top' }[direction];
+      function cut(p) {
+        var edge = (-0.2 + 1.4 * p) * 100;
+        var m = 'linear-gradient(to ' + axis + ', transparent ' + (edge - 3) + '%, #000 ' + (edge + 3) + '%)';
+        old.style.maskImage = m; old.style.webkitMaskImage = m;
+      }
+      cut(0);
+      var masked = Object.assign({}, ctrl, {
+        getProgress: function () { return 0; },
+        setProgress: function (p) { cut(p); ctrl.setProgress(p); }
+      });
+
+      var done = false;
+      var handle = { finish: function () {
+        if (done) return; done = true;
+        if (handle.inner) handle.inner.cancel();
+        ctrl.setAlpha(0); ctrl.setProgress(0);
+        old.remove();
+        root.classList.remove('is-sweeping');
+        if (active === handle) active = null;
+      } };
+      active = handle;
+      ctrl.setDirection(direction);
+      ctrl.setProgress(0);
+      handle.inner = g.playSweep(masked, Object.assign({}, SWEEP, {
+        direction: direction,
+        midpoint: 1,
+        onMidpoint: function () { old.remove(); },      // the band has passed: nothing left to mask
+        onComplete: handle.finish
+      }));
+      // the band runs on requestAnimationFrame, which a background tab
+      // throttles to nothing — never leave the old page lying on top
+      setTimeout(handle.finish, SWEEP.sweepMs + SWEEP.outroMs + 1500);
+    }).catch(function (e) {
+      console.error('[sweep]', e);
+      location.href = url.href;
+    });
+  }
+
+  /* ── wiring ── */
+  document.addEventListener('click', function (e) {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    var a = e.target.closest && e.target.closest('a[href]');
+    if (!isPageLink(a)) return;
+    e.preventDefault();
+    go(new URL(a.href, location.href), SWEEP.direction, true);
+  });
+  // start the fetch as soon as a page link is hovered, so the click never waits
+  document.addEventListener('pointerover', function (e) {
+    var a = e.target.closest && e.target.closest('a[href]');
+    if (isPageLink(a)) load(new URL(a.href, location.href)).catch(function () {});
+  });
+  history.scrollRestoration = 'manual';
+  history.replaceState({ soft: true }, '', location.href);
+  addEventListener('popstate', function (e) {
+    if (!e.state || !e.state.soft) { location.reload(); return; }
+    go(new URL(location.href), SWEEP.direction === 'ltr' ? 'rtl' : 'ltr', false);
+  });
 })();

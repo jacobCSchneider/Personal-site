@@ -214,51 +214,13 @@ button out every frame), and it only runs on devices that hover. A press
 squeezes the pill to `scale(.97)` in 160ms — feedback on the touch-down, not
 the release.
 
-## Colour modes
+## Colour
 
-Three themes, picked from the swatches immediately left of "AMS":
-
-| | | |
-|---|---|---|
-| **Light** | off-white `#fdfdfb`, black ink | the original |
-| **Dark** | neutral near-black `#0e0e0d` | |
-| **Paper** | warm cream `#f6f1e7`, brown-black ink | |
-
-Each theme has its own swatch rather than one button cycling through them: a
-12px circle filled with that theme's page colour. The active one carries a ring
-in the current theme's ink, and a hairline inset keeps the pale swatches
-visible against a pale page. The colours are hard-coded per theme on purpose —
-a swatch has to show *its* theme, not the active one.
-
-- The theme is resolved by an inline script in `<head>` **before first paint**,
-  so it can never flash the wrong one.
-- It follows the OS by default (dark → Dark, otherwise Light). The moment the
-  visitor picks one it's stored in `localStorage` and wins from then on.
-- Each theme is just a block of token overrides on `:root[data-theme="…"]` —
-  nothing else in the stylesheet is theme-aware. Adding a fourth is three
-  edits: the token block, a `.sw--<id>` colour, and a `<button class="sw">` in
-  the status bar. The themes the site accepts are listed once, in the `ok`
-  array in the `<head>` script; anything else stored falls back to Light, so a
-  visitor can never be stranded in a theme with no swatch.
-
-**The swap is instant, deliberately.** Components carry their own transitions
-(links, indicator dots, arrows, buttons), so a theme change used to fade some
-things and snap others. A `.theming` class now kills *every* transition for the
-duration of the swap. The sequence matters: add the class, change the theme,
-move the active ring, force a style flush (`void document.body.offsetWidth`),
-remove the class — without the flush in the middle the browser coalesces it all
-and the transitions run anyway. The swatch ring is updated inside that window
-too, and its `box-shadow` is deliberately not transitioned, because the ring's
-colours come from the theme and would otherwise fade. Measured after every
-switch: zero transitions running.
-
-Three things deliberately don't follow the theme, because the logos are baked
-with a fixed polarity:
-
-- the **Red Antler** chip stays light everywhere;
-- the **Mollie** plate stays dark (its glyph is white), lifted to `#1c1c1a` in
-  Dark and `#16202f` in Midnight so the badge doesn't vanish into the page;
-- the orange accent is the same in all five.
+One light theme: off-white `#fdfdfb`, black ink, the orange accent. The three
+colour modes (Light / Dark / Paper, picked from swatches next to "AMS") that
+the rebuild had for a while are gone, along with the before-first-paint theme
+script and the `.theming` transition killer that went with them. The tokens
+on `:root` are the only place colour lives.
 
 ## About page
 
@@ -410,9 +372,45 @@ Every animation on the site was passed through Emil Kowalski's `animate`,
 - **Reduced motion** keeps the opacity and colour changes and drops the
   movement, on every piece.
 
-The pixel-wave page transition that briefly lived between the home and about
-pages is gone: a cross-document navigation can't be made seamless in every
-browser, and a one-frame flash in the middle of it broke the illusion.
+## Page transition (glimm)
+
+Page links don't reload the document. `pageSweep` in `script.js` fetches the
+next page (on hover already, so it's cached by the click) and glimm's band
+(glimm.dev, MIT; the framework-agnostic core is vendored in
+`assets/js/glimm/`, loaded by a `<script type="module">` on each page and
+exposed as `window.glimm`) makes **one pass** across the screen. The band is
+the mask: ahead of it the page you were on, behind it the next one.
+
+- **At the click** the old `<main>` is lifted into a fixed, viewport-sized
+  layer (`.page-old`, shifted by the scroll offset so it looks identical) and
+  the new `<main>` goes into the flow underneath, scrolled to the top. Every
+  frame the old layer's `mask-image` is cut along the band's leading edge —
+  the same 6% soft edge glimm's own curtain uses — so the band sits right
+  over the seam. Once the band has passed, the old layer is removed.
+- **No second entrance.** The modules re-run for the new page (`initPage()`;
+  window/document listeners are registered with `pageSignal()` and die with
+  the page; the clock keeps one interval), but with `pageArrived` set, so the
+  hero intro, photo fade, timeline, services and carousel entrances are
+  skipped: the page is fully rendered the moment the band reveals it. On a
+  hard load they play as before.
+- **History.** `pushState` per hop, `scrollRestoration` manual; back and
+  forward replay the sweep right to left. A fetched document is cloned in,
+  not moved, so the cache can serve the same page again.
+- **Settings** are the `SWEEP` object at the top of `pageSweep`: palette (the
+  seven named ones, or `glimm.accentPair('#ff8c00', …)` for one built on the
+  accent), direction, `sweepMs`, easing, `bandTight`, `swellAmount`,
+  `waveAmount`, `rippleAmount`, `waveSpeed`, `peakAlpha`, `brightness`,
+  `outroMs`. Current: ember, 1.6s, bandTight 9, wave 1.4, ripple 1.3, speed
+  .9, brightness 1.05.
+- **Falls back** to an instant swap with reduced motion, in a hidden tab, or
+  without WebGL; to a normal navigation if the fetch fails; and a timer
+  clears the old layer if the band's animation frames never come. Links that
+  open in a new tab, downloads, anchors, external links and anything marked
+  `data-glimm-skip` are left alone.
+
+An earlier version did glimm's two-phase covered sweep (cover, hold on a
+solid, swap, reveal); it read as two passes with a stop in the middle. Before
+that, a pixel-wave transition did a full page load at the cut and flashed.
 
 ## Deliberate differences from the live site
 
@@ -428,7 +426,6 @@ browser, and a one-frame flash in the middle of it broke the illusion.
 | Services | — | four-row list below Works |
 | Hero | appears instantly | staggered blur-in intro |
 | Testimonial switch | cross-fade, height jumps | direction-aware, height tweened |
-| Theme | light only | three colour modes, one swatch each |
 | Pages | one | plus an about page, linked from the About label |
 | Mollie mark | glyph sits ~1.5px low | cropped PNG, properly centred |
 

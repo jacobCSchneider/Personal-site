@@ -36,54 +36,8 @@
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);  /* moving on screen */
 }
 
-/* ── themes ──────────────────────────────────────────────
-   Set on <html> before first paint by the inline script in <head>; the button
-   left of AMS cycles through them and remembers the choice. Every theme only
-   restates these tokens — nothing else in the stylesheet is theme-aware.
-   --chip-bg stays light throughout because the Red Antler logo is baked dark
-   on light, and the Mollie plate stays dark because its glyph is white. */
-
-/* neutral near-black */
-:root[data-theme="dark"] {
-  --bg:        #0e0e0d;
-  --ink:       #f4f4f1;
-  --ink-70:    rgba(244, 244, 241, .7);
-  --ink-40:    rgba(244, 244, 241, .4);
-  --line:      #2d2d2a;
-  --card-bg:   #1a1a18;
-  --clock:     #6e6e69;
-  --veil:      rgba(14, 14, 13, .72);
-  --on-ink:    #0e0e0d;
-
-  color-scheme: dark;
-}
-
-/* warm cream, brown-black ink */
-:root[data-theme="paper"] {
-  --bg:        #f6f1e7;
-  --ink:       #2b2420;
-  --ink-70:    rgba(43, 36, 32, .72);
-  --ink-40:    rgba(43, 36, 32, .42);
-  --line:      #e2d9c9;
-  --card-bg:   #efe8da;
-  --clock:     #a39889;
-  --veil:      rgba(246, 241, 231, .74);
-  --on-ink:    #f6f1e7;
-  --chip-bg:   #e6ded0;
-}
-
-
-/* Components carry their own transitions (links, dots, arrows, buttons), so a
-   theme change would fade some things and snap others. This kills every
-   transition for the duration of the swap, so the whole page flips at once.
-   script.js adds it, forces a style flush, then removes it. */
-:root.theming,
-:root.theming *,
-:root.theming *::before,
-:root.theming *::after {
-  transition: none !important;
-  animation-duration: 0s !important;
-}
+/* --chip-bg stays light because the Red Antler logo is baked dark on
+   light, and the Mollie plate stays dark because its glyph is white. */
 
 /* ── base ────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box }
@@ -194,49 +148,6 @@ img, video { display: block }
   white-space: nowrap;
 }
 
-/* Colour-theme swatches, sitting just left of AMS. Each one is simply that
-   theme's page colour. Hard-coded per theme on purpose — a swatch must show
-   its own theme, not the active one. The hairline keeps the pale ones visible
-   against a pale page. */
-.themes {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-right: 8px;
-}
-
-.sw {
-  width: 12px;
-  height: 12px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  cursor: pointer;
-  background: var(--sw-bg);
-  box-shadow: inset 0 0 0 1px rgba(128, 128, 128, .35);
-  transition: transform .18s var(--ease);
-}
-@media (hover: hover) and (pointer: fine) {
-  .sw:hover { transform: scale(1.18) }
-}
-.sw:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px }
-
-/* the active one keeps a ring in the current theme's ink */
-.sw[aria-pressed="true"] {
-  box-shadow: inset 0 0 0 1px rgba(128, 128, 128, .35),
-              0 0 0 1.5px var(--bg),
-              0 0 0 3px var(--ink);
-}
-
-.sw--light    { --sw-bg: #fdfdfb }
-.sw--dark     { --sw-bg: #0e0e0d }
-.sw--paper    { --sw-bg: #f6f1e7 }
-
-@media (prefers-reduced-motion: reduce) {
-  .sw { transition: none }
-  .sw:hover { transform: none }
-}
-
 .statusbar__divider {
   width: 2px;
   height: 12px;
@@ -329,10 +240,6 @@ img, video { display: block }
   background: var(--chip-bg);
   vertical-align: -3.7px;
 }
-
-/* Pure black would vanish into the dark page; this keeps the badge legible
-   while staying effectively black. */
-:root[data-theme="dark"] .mark--mollie { background: #1c1c1a }
 
 .mark--dalen {
   width: 17px;
@@ -801,6 +708,18 @@ html.has-modal, html.has-modal body { overflow: hidden }
 @media (prefers-reduced-motion: reduce) {
   .card__expand { transition: none }
 }
+
+/* The page being left, frozen on top while the band wipes it away. The
+   mask is set per frame by script.js along the band's edge. */
+.page-old {
+  position: fixed;
+  inset: 0;
+  z-index: 998;
+  overflow: hidden;
+  pointer-events: none;
+}
+/* no stray clicks while the band is crossing */
+html.is-sweeping body { pointer-events: none }
 
 /* ═══════════════════════ about page ═══════════════════════ */
 /* Back link, mirroring the status line on the home page. */
